@@ -8,6 +8,22 @@ i8·e10 is designed for clarity and ease of use, helping you manage your finance
 
 ---
 
+## 🧐 What’s in a name?
+
+
+The name i8·e10 is a contraction of Income 8 and Expense 10. It is a modern nod to the classic Tamil song lyrics:
+
+> வரவு எட்டணா,
+> செலவு பத்தனா;
+> அதிகம் இரண்டனா
+> கடைசியில் துண்டனா
+
+*(Income is 8 annas, Expense is 10 annas; The extra 2 annas lead to a deficit in the end.)*
+
+The app serves as a tool to help you track that very balance and ensure your "expense" never overtakes your "income"
+
+---
+
 ## ✨ Key Features
 
 -   **🔒 End-to-End Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts, no cloud, no tracking.
