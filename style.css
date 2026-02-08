@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Use @layer base to apply this CSS to the root element */
+@layer base {
+  /* This tells the browser/extensions like Dark Reader that YOU handle both themes */
+  :root, :host {
+    color-scheme: dark; /* Default dark scheme */
+  }
+
+  /* When your custom dark class is active, explicitly set the dark scheme */
+  .dark {
+    color-scheme: dark;
+  }
+}
+
+@custom-variant dark (&:where(.dark, .dark *));

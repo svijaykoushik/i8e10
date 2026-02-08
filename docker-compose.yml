@@ -1,0 +1,10 @@
+services:
+  i8e10:
+    image: i8e10:1.0.0-rc7.1
+    container_name: i8e10
+    ports:
+      - "5050:80"
+      - "5051:443"
+    volumes:
+      - ./nginx/conf/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro

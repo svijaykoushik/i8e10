@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>i8·e10 | வரவு செலவு கணக்கு - Private & Offline Expense Tracker</title>
+    <meta name="description" content="A secure, private, and offline personal finance tracker. Manage your money in English & Tamil. No accounts. No cloud. End-to-end encrypted." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "indigo-600": "#4f46e5",
+              "indigo-500": "#6366f1",
+              "indigo-100": "#e0e7ff",
+              "slate-50": "#f8fafc",
+              "slate-900": "#0f172a",
+              "slate-800": "#1e293b",
+              "slate-700": "#334155",
+              "slate-200": "#e2e8f0",
+              "slate-500": "#64748b",
+              "slate-300": "#cbd5e1",
+              "slate-600": "#475569",
+              "green-600": "#16a34a",
+              "red-600": "#dc2626",
+              "amber-500": "#f59e0b",
+              "blue-500": "#3b82f6",
+              "orange-500": "#f97316",
+              "purple-500": "#a855f7",
+              "cyan-500": "#06b6d4",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        scroll-behavior: smooth;
+      }
+      .gradient-bg {
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      }
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+      .feature-icon {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+      }
+      .btn-press:active {
+        transform: scale(0.95);
+      }
+      .tamil-font {
+        font-family: "Noto Sans Tamil", sans-serif;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-900 text-slate-200">
+    <!-- Navigation -->
+    <nav class="bg-slate-800 shadow-sm py-4 sticky top-0 z-50">
+      <div class="container mx-auto px-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <div
+            class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center"
+          >
+            <i class="fas fa-calculator text-white text-xl"></i>
+          </div>
+          <span class="text-xl font-bold text-slate-200">i8·e10</span>
+        </div>
+        <div class="hidden md:flex space-x-8">
+          <a
+            href="#features"
+            class="text-slate-300 hover:text-indigo-400 font-medium"
+            >Features</a
+          >
+          <a
+            href="#pwa"
+            class="text-slate-300 hover:text-indigo-400 font-medium"
+            >PWA Benefits</a
+          >
+        </div>
+        <a
+          href="https://i8e10.vercel.app"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition duration-300 btn-press"
+        >
+          Try Now
+        </a>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-bg text-white py-20">
+      <div
+        class="container mx-auto px-4 flex flex-col md:flex-row items-center"
+      >
+        <div class="md:w-1/2 mb-12 md:mb-0">
+          <h1 class="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            Take Control of Your Money with a
+            <span class="text-amber-500">Private Offline Expense Tracker</span>
+          </h1>
+          <p class="text-xl mb-8 text-indigo-100 max-w-lg">
+            i8·e10 is a <strong>personal finance manager</strong> that works entirely offline. All your data stays on your device—<strong>no cloud, no accounts</strong>.
+          </p>
+          <p class="text-lg mb-8 text-indigo-100 max-w-lg">
+             Experience true <strong>Data Sovereignty</strong>. A Progressive Web App that needs no installation. Try the <strong>offline expense tracker app</strong> straight from your browser.
+          </p>
+          <a
+            href="https://i8e10.vercel.app"
+            class="bg-white text-indigo-600 hover:bg-slate-100 font-bold py-3 px-8 rounded-lg text-lg transition duration-300 btn-press inline-block"
+          >
+            Try Now
+          </a>
+        </div>
+        <div class="md:w-1/2 flex justify-center">
+          <div class="relative">
+            <div
+              class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 w-80 h-96 shadow-2xl"
+            >
+              <div
+                class="bg-slate-700 border-2 border-dashed rounded-xl w-full h-full flex items-center justify-center"
+              >
+                <i class="fas fa-mobile-alt text-5xl text-slate-400"></i>
+              </div>
+            </div>
+            <div
+              class="absolute -bottom-4 -right-4 bg-amber-500 text-slate-900 px-4 py-2 rounded-lg font-bold"
+            >
+              100% Offline
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 bg-slate-800">
+      <div class="container mx-auto px-4">
+        <div class="text-center mb-16">
+          <h2 class="text-3xl md:text-4xl font-bold mb-4">Powerful Features</h2>
+          <p class="text-slate-400 max-w-2xl mx-auto">
+            Everything you need to manage your finances securely and efficiently
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <!-- Feature 1 -->
+          <div class="bg-slate-700 rounded-2xl p-6 card-hover">
+            <div class="feature-icon bg-indigo-100 text-indigo-600 mb-4">
+              <i class="fas fa-lock text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">End-to-End Encryption</h3>
+            <p class="text-slate-300">
+               Your <strong>private finance management</strong> data is encrypted and stored locally using the <strong>Web Crypto API</strong>. Your password is the only key.
+            </p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="bg-slate-700 rounded-2xl p-6 card-hover">
+            <div class="feature-icon bg-green-100 text-green-600 mb-4">
+              <i class="fas fa-shield-alt text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Secure Password & Recovery</h3>
+            <p class="text-slate-300">
+              Bank-grade security for your local device. Protected by a password you set and a unique <strong>12-word recovery phrase</strong> generated during setup.
+            </p>
+          </div>
+
+          <!-- Feature 3 - Reconcile Feature -->
+          <div
+            class="bg-slate-700 rounded-2xl p-6 card-hover border-2 border-amber-500"
+          >
+            <div class="feature-icon bg-amber-100 text-amber-500 mb-4">
+              <i class="fas fa-sync-alt text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Easy Reconcile</h3>
+            <p class="text-slate-300">
+              Reconcile your wallet balance to match actual cash or bank
+              accounts. Get back on track with one click.
+            </p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="bg-slate-700 rounded-2xl p-6 card-hover">
+            <div class="feature-icon bg-purple-100 text-purple-600 mb-4">
+              <i class="fas fa-chart-line text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Better than Excel</h3>
+            <p class="text-slate-300">
+              Move beyond the <strong>expense tracker excel</strong> sheet. Our <strong>Bulk Add</strong> feature lets you paste plain text and parses it instantly.
+            </p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="bg-slate-700 rounded-2xl p-6 card-hover">
+            <div class="feature-icon bg-amber-100 text-amber-500 mb-4">
+              <i class="fas fa-language text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Bilingual Interface</h3>
+            <p class="text-slate-300">
+              Clean, intuitive interface available in both English and Tamil
+              (<strong>வரவு செலவு கணக்கு</strong>). A true <strong>Tamil finance tracker</strong>.
+            </p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="bg-slate-700 rounded-2xl p-6 card-hover">
+            <div class="feature-icon bg-cyan-100 text-cyan-500 mb-4">
+              <i class="fas fa-bolt text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">Smart & Fast Entry</h3>
+            <p class="text-slate-300">
+              Quick add button and bulk add feature to enter transactions in
+              seconds.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PWA Section -->
+    <section
+      id="pwa"
+      class="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+    >
+      <div class="container mx-auto px-4 text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-6">Progressive Web App</h2>
+        <p class="text-xl mb-10 max-w-2xl mx-auto">
+          i8·e10 is a PWA that works seamlessly on all devices without
+          installation.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+            <i class="fas fa-download text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold mb-2">No Installation</h3>
+            <p>
+              No app store download required. Just open in your browser and
+              start using immediately.
+            </p>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+            <i class="fas fa-bolt text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold mb-2">Fast & Reliable</h3>
+            <p>
+              Works offline with smooth performance and instant loading after
+              first visit.
+            </p>
+          </div>
+
+          <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6">
+            <i class="fas fa-mobile-alt text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold mb-2">Cross-Platform</h3>
+            <p>
+              Works on any device with a modern browser - iOS, Android, Windows,
+              Mac, Linux.
+            </p>
+          </div>
+        </div>
+
+        <a
+          href="https://i8e10.vercel.app"
+          class="mt-12 inline-block bg-white text-indigo-600 hover:bg-slate-100 font-bold py-4 px-8 rounded-lg text-lg transition duration-300 btn-press"
+        >
+          Try i8·e10 Now
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-400 py-12">
+      <div class="container mx-auto px-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div>
+            <div class="flex items-center space-x-2 mb-4">
+              <div
+                class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center"
+              >
+                <i class="fas fa-calculator text-white text-xl"></i>
+              </div>
+              <span class="text-xl font-bold text-slate-200">i8·e10</span>
+            </div>
+            <p class="text-slate-400">
+              Secure, private, and powerful <strong>daily expense tracker</strong> that works
+              entirely offline. The <strong>best asset management tool</strong> for privacy-conscious users.
+            </p>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-lg mb-4 text-slate-200">Product</h4>
+            <ul class="space-y-2">
+              <li>
+                <a href="#features" class="hover:text-slate-200">Features</a>
+              </li>
+              <li>
+                <a href="#pwa" class="hover:text-slate-200">PWA Benefits</a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-lg mb-4 text-slate-200">Resources</h4>
+            <ul class="space-y-2">
+              <li>
+                <a href="#" class="hover:text-slate-200">Documentation</a>
+              </li>
+              <li><a href="#" class="hover:text-slate-200">Tutorials</a></li>
+              <li><a href="#" class="hover:text-slate-200">Blog</a></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 class="font-bold text-lg mb-4 text-slate-200">Legal</h4>
+            <ul class="space-y-2">
+              <li>
+                <a href="/privacy" class="hover:text-slate-200"
+                  >Privacy Policy</a
+                >
+              </li>
+              <li>
+                <a href="/terms" class="hover:text-slate-200"
+                  >Terms of Service</a
+                >
+              </li>
+              <li>
+                <a href="/license" class="hover:text-slate-200">License</a>
+              </li>
+              <li><a href="#" class="hover:text-slate-200">Security</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div
+          class="border-t border-slate-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center"
+        >
+          <p class="text-slate-500">
+            © 2025 i8·e10. Licensed under AGPL License.
+          </p>
+          <div class="flex space-x-4 mt-4 md:mt-0">
+            <a href="https://github.com/svijaykoushik/i8e10" class="text-slate-400 hover:text-slate-200"
+              ><i class="fab fa-github"></i
+            ></a>
+            <a href="#" class="text-slate-400 hover:text-slate-200"
+              ><i class="fab fa-twitter"></i
+            ></a>
+            <a href="#" class="text-slate-400 hover:text-slate-200"
+              ><i class="fab fa-linkedin"></i
+            ></a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

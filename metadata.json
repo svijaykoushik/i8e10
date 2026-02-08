@@ -1,0 +1,6 @@
+{
+  "name": "i8·e10 | வரவு செலவு கணக்கு",
+  "description": "A simple, offline-first application to track your income and expenses. Built for speed and ease of use, it helps you manage your personal finances without needing an account. All data is stored locally on your device, and you can export it to CSV anytime.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
