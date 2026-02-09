@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import { InvestmentFilterState, InvestmentFilterStatus, FilterPeriod } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface InvestmentFilterModalProps {
   isOpen: boolean;
@@ -35,7 +35,6 @@ const InvestmentFilterModal: FC<InvestmentFilterModalProps> = ({ isOpen, onClose
   };
   
   const handleReset = () => {
-    trackUserAction('investment_filter_reset_button');
     const resetState: InvestmentFilterState = {
         status: InvestmentFilterStatus.ALL,
         type: 'all',

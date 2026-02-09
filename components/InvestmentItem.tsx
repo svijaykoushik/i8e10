@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { FC } from 'react';
 import { Investment, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType } from '../types';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface InvestmentItemProps {
   investment: Investment;
@@ -110,7 +110,6 @@ const InvestmentItem: FC<InvestmentItemProps> = ({ investment, transactions, onE
   const handleToggleExpand = async () => {
     const willBeExpanded = !isExpanded;
     try {
-      await trackUserAction(willBeExpanded ? 'investment_item_expand' : 'investment_item_collapse', { investment_id: investment.id });
     } catch (error) {
       console.error('Error tracking expansion:', error);
     }
@@ -121,7 +120,6 @@ const InvestmentItem: FC<InvestmentItemProps> = ({ investment, transactions, onE
     const willBeOpen = !menuOpen;
     if (willBeOpen) {
       try {
-        await trackUserAction('open_investment_menu', { investment_id: investment.id });
       } catch (error) {
         console.error('Error tracking menu open:', error);
       }

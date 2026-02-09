@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { FC, FormEvent } from 'react';
 import { Debt, DebtType } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface DebtFormModalProps {
   isOpen: boolean;
@@ -67,7 +67,6 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
   
   const handleTypeChange = async (newType: DebtType) => {
     try {
-      await trackUserAction('debt_form_change_type', { new_type: newType, previous_type: type });
       setType(newType);
     } catch (error) {
       console.error('Error tracking type change:', error);
@@ -76,7 +75,6 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
 
   const handleCreateTransactionToggle = async (isChecked: boolean) => {
     try {
-      await trackUserAction('debt_form_toggle_create_transaction', { is_checked: isChecked });
       setCreateTransaction(isChecked);
     } catch (error) {
       console.error('Error tracking toggle:', error);

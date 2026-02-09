@@ -3,7 +3,7 @@ import type { FC } from 'react';
 import { FilterPeriod } from '../types';
 import Modal from './ui/Modal';
 import useTheme from '../hooks/useTheme';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -23,8 +23,6 @@ interface SettingsModalProps {
   onExportAllData: () => void;
   onImportData: (file: File) => void;
   onClearAllData: () => void;
-  trackingConsent: boolean | null;
-  onTrackingConsentChange: (consent: boolean) => void;
   onAlert: (title: string, message: string) => void;
 }
 
@@ -41,8 +39,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
   onExportAllData,
   onImportData,
   onClearAllData,
-  trackingConsent,
-  onTrackingConsentChange,
   onAlert,
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>(currentDefault);
@@ -77,7 +73,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   const handleAddWallet = () => {
     if (newWallet.trim() && !editableWallets.includes(newWallet.trim())) {
-      trackUserAction('add_wallet');
       setEditableWallets([...editableWallets, newWallet.trim()]);
       setNewWallet('');
     }
@@ -85,7 +80,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
 
   const handleDeleteWallet = (walletToDelete: string) => {
     if (editableWallets.length > 1) {
-        trackUserAction('delete_wallet');
         setEditableWallets(editableWallets.filter(w => w !== walletToDelete));
     } else {
         onAlert("Action Not Allowed", "You must have at least one wallet.");
@@ -99,7 +93,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      trackUserAction('import_file_selected');
       onImportData(file);
     }
     // Reset file input value to allow re-uploading the same file
@@ -327,26 +320,6 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </p>
         </div>
 
-        <div>
-            <label className={labelClasses}>Privacy Settings / தனியுரிமை</label>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                Help us improve by allowing anonymous usage tracking. We will never collect your financial data.
-            </p>
-            <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-100 dark:bg-slate-700 p-2">
-                <span className="px-2 font-medium text-slate-900 dark:text-slate-100">
-                    Allow Anonymous Tracking
-                </span>
-                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                    <input
-                        type="checkbox"
-                        checked={!!trackingConsent}
-                        onChange={(e) => onTrackingConsentChange(e.target.checked)}
-                        className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-200 dark:bg-slate-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 dark:peer-focus:ring-indigo-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-indigo-600"></div>
-                </label>
-            </div>
-        </div>
       </div>
     </Modal>
   );

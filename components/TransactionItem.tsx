@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
 import { Transaction, TransactionType } from '../types';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -70,7 +70,6 @@ const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDele
     const willBeOpen = !menuOpen;
     if (willBeOpen) {
       try {
-        await trackUserAction('open_transaction_menu');
       } catch (error) {
         console.error('Error tracking menu open:', error);
       }

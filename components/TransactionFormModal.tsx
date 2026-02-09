@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
 import { Transaction, TransactionType } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 type FormMode = 'income' | 'expense' | 'transfer';
 
@@ -75,7 +75,6 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
 
   const handleModeChange = async (newMode: FormMode) => {
     try {
-      await trackUserAction('transaction_form_change_mode', { new_mode: newMode, previous_mode: formMode });
       setFormMode(newMode);
     } catch (error) {
       console.error('Error tracking mode change:', error);
