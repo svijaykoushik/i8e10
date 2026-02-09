@@ -1,118 +1,118 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>i8·e10 | License (GNU AGPL v3)</title>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>License | i8·e10 - Private Expense Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'indigo-600': '#4f46e5',
-                        'indigo-500': '#6366f1',
-                        'indigo-100': '#e0e7ff',
-                        'slate-50': '#f8fafc',
-                        'slate-900': '#0f172a',
-                        'slate-800': '#1e293b',
-                        'slate-700': '#334155',
-                        'slate-200': '#e2e8f0',
-                        'slate-500': '#64748b',
-                        'slate-300': '#cbd5e1',
-                        'slate-600': '#475569',
-                        'green-600': '#16a34a',
-                        'red-600': '#dc2626',
-                        'amber-500': '#f59e0b',
-                        'blue-500': '#3b82f6',
-                        'orange-500': '#f97316',
-                        'purple-500': '#a855f7',
-                        'cyan-500': '#06b6d4',
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Outfit', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f0f9ff',
+                100: '#e0f2fe',
+                200: '#bae6fd',
+                300: '#7dd3fc',
+                400: '#38bdf8',
+                500: '#0ea5e9',
+                600: '#0284c7',
+                700: '#0369a1',
+                800: '#075985',
+                900: '#0c4a6e',
+                950: '#082f49',
+              },
+              dark: {
+                bg: '#0a0a0a',
+                card: '#171717',
+                border: '#262626',
+              }
+            },
+          },
+        },
+      };
     </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .gradient-bg {
-            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
-        }
-        .license-content {
-            line-height: 1.8;
-        }
-        .license-content h2, .license-content h3 {
-            color: #e2e8f0;
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .license-content p {
-            margin-bottom: 1rem;
-        }
-        .license-content ul {
-            list-style-type: disc;
-            margin-left: 1.5rem;
-            margin-bottom: 1rem;
-        }
-        .license-content li {
-            margin-bottom: 0.5rem;
-        }
-        .license-content pre {
-            background-color: #1e293b;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        .tamil-font {
-            font-family: 'Noto Sans Tamil', sans-serif;
-        }
+      .glass {
+        background: rgba(23, 23, 23, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .glass-card {
+        background: linear-gradient(145deg, rgba(38, 38, 38, 0.6) 0%, rgba(23, 23, 23, 0.8) 100%);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .blob {
+        position: absolute;
+        filter: blur(80px);
+        z-index: -1;
+        opacity: 0.3;
+      }
     </style>
-</head>
-<body class="bg-slate-900 text-slate-200">
+  </head>
+  <body class="bg-dark-bg text-gray-100 font-sans antialiased selection:bg-brand-500/30">
+    
+    <!-- Background Effects -->
+    <div class="fixed inset-0 pointer-events-none">
+      <div class="blob bg-brand-900 w-96 h-96 rounded-full top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
+      <div class="blob bg-purple-900 w-[30rem] h-[30rem] rounded-full bottom-0 right-0 translate-x-1/3 translate-y-1/3"></div>
+    </div>
+
     <!-- Navigation -->
-    <nav class="bg-slate-800 shadow-sm py-4 sticky top-0 z-50">
-        <div class="container mx-auto px-4 flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-calculator text-white text-xl"></i>
-                </div>
-                <span class="text-xl font-bold text-slate-200">i8·e10</span>
-            </div>
-            <div class="hidden md:flex space-x-8">
-                <a href="/" class="text-slate-300 hover:text-indigo-400 font-medium">Home</a>
-                <a href="/#features" class="text-slate-300 hover:text-indigo-400 font-medium">Features</a>
-                <a href="/#pwa" class="text-slate-300 hover:text-indigo-400 font-medium">PWA Benefits</a>
-            </div>
-            <a href="https://i8e10.vercel.app" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium transition duration-300">
-                Try Now
-            </a>
+    <nav class="fixed w-full z-50 glass">
+      <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <a href="index.html" class="flex items-center gap-3 group">
+          <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-300">
+            <i class="fas fa-wallet text-white text-lg"></i>
+          </div>
+          <span class="text-xl font-bold tracking-tight">i8·e10</span>
+        </a>
+        
+        <div class="flex items-center gap-6">
+          <a href="index.html" class="text-sm font-medium text-gray-400 hover:text-white transition-colors">Back to Home</a>
+          <a href="https://i8e10.vercel.app" class="bg-white text-dark-bg px-5 py-2 rounded-full font-semibold text-sm hover:bg-gray-100 transition-all duration-300 transform hover:-translate-y-0.5">
+            Launch App
+          </a>
         </div>
+      </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section class="gradient-bg text-white py-16">
-        <div class="container mx-auto px-4 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold mb-4">GNU Affero General Public License</h1>
-            <p class="text-xl text-indigo-100">Version 3, 19 November 2007</p>
+    <!-- Header -->
+    <header class="pt-40 pb-20 relative overflow-hidden">
+      <div class="container mx-auto px-6 text-center">
+        <h1 class="text-4xl md:text-6xl font-bold mb-6">License</h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+          GNU Affero General Public License v3.0
+        </p>
+        <div class="mt-8 text-sm text-brand-400 font-mono">
+          Open Source Software
         </div>
-    </section>
+      </div>
+    </header>
 
-    <!-- License Content -->
-    <section class="py-16 bg-slate-800">
-        <div class="container mx-auto px-4 max-w-4xl">
-            <div class="license-content text-slate-300">
-                <p class="text-center mb-8 text-lg">
-                    Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/><br>
+    <!-- Content -->
+    <section class="pb-24">
+      <div class="container mx-auto px-6 max-w-4xl">
+        <div class="glass-card p-8 md:p-12 rounded-3xl">
+          <div class="prose prose-invert prose-lg max-w-none">
+                                Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/><br>
                     Everyone is permitted to copy and distribute verbatim copies<br>
                     of this license document, but changing it is not allowed.
                 </p>
 
-                <h2 class="text-2xl font-bold mb-4 text-indigo-400">Preamble</h2>
+                <h2 class="text-2xl font-bold mb-4 text-brand-400">Preamble</h2>
                 <p>
                     The GNU Affero General Public License is a free, copyleft license for
                     software and other kinds of works, specifically designed to ensure
@@ -171,9 +171,9 @@
                     modification follow.
                 </p>
 
-                <h2 class="text-2xl font-bold mb-4 text-indigo-400">TERMS AND CONDITIONS</h2>
+                <h2 class="text-2xl font-bold mb-4 text-brand-400">TERMS AND CONDITIONS</h2>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">0. Definitions.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">0. Definitions.</h3>
                 <p>
                     "This License" refers to version 3 of the GNU Affero General Public License.
                 </p>
@@ -220,7 +220,7 @@
                     menu, a prominent item in the list meets this criterion.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">1. Source Code.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">1. Source Code.</h3>
                 <p>
                     The "source code" for a work means the preferred form of the work
                     for making modifications to it.  "Object code" means any non-source
@@ -268,7 +268,7 @@
                     same work.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">2. Basic Permissions.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">2. Basic Permissions.</h3>
                 <p>
                     All rights granted under this License are granted for the term of
                     copyright on the Program, and are irrevocable provided the stated
@@ -296,7 +296,7 @@
                     makes it unnecessary.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">3. Protecting Users' Legal Rights From Anti-Circumvention Law.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">3. Protecting Users' Legal Rights From Anti-Circumvention Law.</h3>
                 <p>
                     No covered work shall be deemed part of an effective technological
                     measure under any applicable law fulfilling obligations under article
@@ -314,7 +314,7 @@
                     technological measures.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">4. Conveying Verbatim Copies.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">4. Conveying Verbatim Copies.</h3>
                 <p>
                     You may convey verbatim copies of the Program's source code as you
                     receive it, in any medium, provided that you conspicuously and
@@ -329,7 +329,7 @@
                     and you may offer support or warranty protection for a fee.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">5. Conveying Modified Source Versions.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">5. Conveying Modified Source Versions.</h3>
                 <p>
                     You may convey a work based on the Program, or the modifications to
                     produce it from the Program, in the form of source code under the
@@ -366,7 +366,7 @@
                     parts of the aggregate.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">6. Conveying Non-Source Forms.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">6. Conveying Non-Source Forms.</h3>
                 <p>
                     You may convey a covered work in object code form under the terms
                     of sections 4 and 5, provided that you also convey the
@@ -468,7 +468,7 @@
                     unpacking, reading or copying.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">7. Additional Terms.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">7. Additional Terms.</h3>
                 <p>
                     "Additional permissions" are terms that supplement the terms of this
                     License by making exceptions from one or more of its conditions.
@@ -534,7 +534,7 @@
                     the above requirements apply either way.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">8. Termination.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">8. Termination.</h3>
                 <p>
                     You may not propagate or modify a covered work except as expressly
                     provided under this License.  Any attempt otherwise to propagate or
@@ -566,7 +566,7 @@
                     material under section 10.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">9. Acceptance Not Required for Having Copies.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">9. Acceptance Not Required for Having Copies.</h3>
                 <p>
                     You are not required to accept this License in order to receive or
                     run a copy of the Program.  Ancillary propagation of a covered work
@@ -578,7 +578,7 @@
                     covered work, you indicate your acceptance of this License to do so.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">10. Automatic Licensing of Downstream Recipients.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">10. Automatic Licensing of Downstream Recipients.</h3>
                 <p>
                     Each time you convey a covered work, the recipient automatically
                     receives a license from the original licensors, to run, modify and
@@ -606,7 +606,7 @@
                     sale, or importing the Program or any portion of it.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">11. Patents.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">11. Patents.</h3>
                 <p>
                     A "contributor" is a copyright holder who authorizes use under this
                     License of the Program or a work on which the Program is based.  The
@@ -683,7 +683,7 @@
                     otherwise be available to you under applicable patent law.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">12. No Surrender of Others' Freedom.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">12. No Surrender of Others' Freedom.</h3>
                 <p>
                     If conditions are imposed on you (whether by court order, agreement or
                     otherwise) that contradict the conditions of this License, they do not
@@ -696,7 +696,7 @@
                     License would be to refrain entirely from conveying the Program.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">13. Remote Network Interaction; Use with the GNU General Public License.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">13. Remote Network Interaction; Use with the GNU General Public License.</h3>
                 <p>
                     Notwithstanding any other provision of this License, if you modify the
                     Program, your modified version must prominently offer all users
@@ -719,7 +719,7 @@
                     3 of the GNU General Public License.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">14. Revised Versions of this License.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">14. Revised Versions of this License.</h3>
                 <p>
                     The Free Software Foundation may publish revised and/or new versions of
                     the GNU Affero General Public License from time to time.  Such new versions
@@ -749,7 +749,7 @@
                     later version.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">15. Disclaimer of Warranty.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">15. Disclaimer of Warranty.</h3>
                 <p>
                     THERE IS NO WARRANTY FOR THE PROGRAM, TO THE EXTENT PERMITTED BY
                     APPLICABLE LAW.  EXCEPT WHEN OTHERWISE STATED IN WRITING THE COPYRIGHT
@@ -761,7 +761,7 @@
                     ALL NECESSARY SERVICING, REPAIR OR CORRECTION.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">16. Limitation of Liability.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">16. Limitation of Liability.</h3>
                 <p>
                     IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
                     WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MODIFIES AND/OR CONVEYS
@@ -774,7 +774,7 @@
                     SUCH DAMAGES.
                 </p>
 
-                <h3 class="text-xl font-bold mb-2 text-indigo-300">17. Interpretation of Sections 15 and 16.</h3>
+                <h3 class="text-xl font-bold mb-2 text-brand-300">17. Interpretation of Sections 15 and 16.</h3>
                 <p>
                     If the disclaimer of warranty and limitation of liability provided
                     above cannot be given local legal effect according to their terms,
@@ -786,7 +786,7 @@
 
                 <p class="text-center text-xl font-bold mt-8 mb-4">END OF TERMS AND CONDITIONS</p>
 
-                <h2 class="text-2xl font-bold mb-4 text-indigo-400">How to Apply These Terms to Your New Programs</h2>
+                <h2 class="text-2xl font-bold mb-4 text-brand-400">How to Apply These Terms to Your New Programs</h2>
                 <p>
                     If you develop a new program, and you want it to be of the greatest
                     possible use to the public, the best way to achieve this is to make it
@@ -834,61 +834,24 @@
                     <https://www.gnu.org/licenses/>.
                 </p>
             </div>
+
+          </div>
         </div>
+      </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-slate-800 text-slate-400 py-12">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <div class="flex items-center space-x-2 mb-4">
-                        <div class="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-calculator text-white text-xl"></i>
-                        </div>
-                        <span class="text-xl font-bold text-slate-200">i8·e10</span>
-                    </div>
-                    <p class="text-slate-400">Secure, private, and powerful personal finance tracker that works entirely offline.</p>
-                </div>
-                
-                <div>
-                    <h4 class="font-bold text-lg mb-4 text-slate-200">Product</h4>
-                    <ul class="space-y-2">
-                        <li><a href="/" class="hover:text-slate-200">Home</a></li>
-                        <li><a href="/#features" class="hover:text-slate-200">Features</a></li>
-                        <li><a href="/#pwa" class="hover:text-slate-200">PWA Benefits</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 class="font-bold text-lg mb-4 text-slate-200">Resources</h4>
-                    <ul class="space-y-2">
-                        <li><a href="#" class="hover:text-slate-200">Documentation</a></li>
-                        <li><a href="#" class="hover:text-slate-200">Tutorials</a></li>
-                        <li><a href="#" class="hover:text-slate-200">Blog</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h4 class="font-bold text-lg mb-4 text-slate-200">Legal</h4>
-                    <ul class="space-y-2">
-                        <li><a href="/terms" class="hover:text-slate-200">Terms of Service</a></li>
-                        <li><a href="/privacy" class="hover:text-slate-200">Privacy Policy</a></li>
-                        <li><a href="/license" class="text-indigo-400 hover:text-slate-200">License</a></li>
-                        <li><a href="#" class="hover:text-slate-200">Security</a></li>
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="border-t border-slate-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-                <p class="text-slate-500">© 2025 i8·e10. Licensed under AGPL License.</p>
-                <div class="flex space-x-4 mt-4 md:mt-0">
-                    <a href="https://github.com/svijaykoushik/i8e10" class="text-slate-400 hover:text-slate-200"><i class="fab fa-github"></i></a>
-                    <a href="#" class="text-slate-400 hover:text-slate-200"><i class="fab fa-twitter"></i></a>
-                    <a href="#" class="text-slate-400 hover:text-slate-200"><i class="fab fa-linkedin"></i></a>
-                </div>
-            </div>
+    <footer class="border-t border-white/5 bg-dark-card/30 py-12">
+      <div class="container mx-auto px-6 text-center">
+        <div class="flex justify-center gap-8 mb-8 text-sm text-gray-500">
+          <a href="index.html" class="hover:text-white transition-colors">Home</a>
+          <a href="privacy.html" class="hover:text-white transition-colors">Privacy</a>
+          <a href="terms.html" class="hover:text-white transition-colors">Terms</a>
         </div>
+        <p class="text-gray-600 text-sm">
+          &copy; 2026 i8·e10. Licensed under AGPL-3.0.
+        </p>
+      </div>
     </footer>
-</body>
+  </body>
 </html>
