@@ -31,7 +31,6 @@ import ReconcileBalanceModal from './components/ReconcileBalanceModal';
 import SellInvestmentModal from './components/SellInvestmentModal';
 import SettingsModal from './components/SettingsModal';
 import SettleDebtModal from './components/SettleDebtModal';
-import TrackingConsentBanner from './components/TrackingConsentBanner';
 import TransactionFormModal from './components/TransactionFormModal';
 import TransactionList from './components/TransactionList';
 import AlertModal from './components/ui/AlertModal';
@@ -42,7 +41,6 @@ import * as cryptoService from './utils/cryptoService';
 import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV } from './utils/csvExporter';
 import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
-import { trackEvent, trackUserAction } from './utils/tracking';
 import { exportToZip, readZip } from './utils/zipExporter';
 
 // --- Recovery Modals (Inlined to avoid new files) ---
@@ -52,7 +50,6 @@ const RecoveryPhraseModal: FC<{ phrase: string; onConfirm: () => void }> = ({ ph
     const words = phrase.split(' ');
 
     const handleDownload = () => {
-        trackUserAction('download_recovery_phrase');
         const content = `i8·e10 Recovery Phrase\n\n${phrase}\n\nPlease store this phrase in a safe and secret place. It is the only way to recover your data if you forget your password.`;
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -245,7 +242,6 @@ const App: FC = () => {
     return {
         wallets: (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
         onboardingCompleted: settingsMap.onboardingCompleted ?? false,
-        trackingConsent: settingsMap.trackingConsent ?? null,
         defaultFilterPeriod: settingsMap.defaultFilterPeriod ?? FilterPeriod.THIS_MONTH,
         defaultWallet: settingsMap.defaultWallet ?? 'Cash / ரொக்கம்',
         lastBackupDate: settingsMap.lastBackupDate ?? null,
@@ -255,7 +251,7 @@ const App: FC = () => {
     };
   }, [settingsArray]);
   
-  const { wallets, onboardingCompleted, trackingConsent, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
+  const { wallets, onboardingCompleted, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
 
   const [activeView, setActiveView] = useState<ActiveView>('transactions');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -625,27 +621,13 @@ const App: FC = () => {
     };
 
 
-  useEffect(() => {
-    window.hasPerformedAction = false;
-    // Fire and forget for initialization events
-    trackEvent('session_start').catch(console.error);
-    const handleBeforeUnload = () => {
-        // We can't await here because beforeunload needs to be synchronous
-        if (window.hasPerformedAction) trackEvent('session_end').catch(console.error);
-        else trackEvent('session_abandoned').catch(console.error);
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, []);
 
   const handleApplyFilters = (newFilter: FilterState) => {
-    trackUserAction('filter_apply').catch(console.error);
     setFilter(newFilter);
     setIsFilterModalOpen(false);
   };
 
   const handleResetFilter = useCallback(<K extends keyof FilterState>(key: K) => {
-    trackUserAction('filter_reset_pill', { filter_key: key }).catch(console.error);
     const defaultsMap: { [T in keyof FilterState]?: FilterState[T] } = {
         period: FilterPeriod.ALL,
         wallet: 'all',
@@ -657,13 +639,11 @@ const App: FC = () => {
   }, []);
 
   const handleApplyDebtFilters = (newFilter: DebtFilterState) => {
-    trackUserAction('debt_filter_apply');
     setDebtFilter(newFilter);
     setIsDebtFilterModalOpen(false);
   };
 
   const handleResetDebtFilter = useCallback(<K extends keyof DebtFilterState>(key: K) => {
-    trackUserAction('debt_filter_reset_pill', { filter_key: key });
     const defaultsMap: { [T in keyof DebtFilterState]?: DebtFilterState[T] } = {
         status: DebtFilterStatus.ALL,
         type: DebtFilterType.ALL,
@@ -675,13 +655,11 @@ const App: FC = () => {
   }, []);
 
   const handleApplyInvestmentFilters = (newFilter: InvestmentFilterState) => {
-    trackUserAction('investment_filter_apply');
     setInvestmentFilter(newFilter);
     setIsInvestmentFilterModalOpen(false);
   };
 
   const handleResetInvestmentFilter = useCallback(<K extends keyof InvestmentFilterState>(key: K) => {
-    trackUserAction('investment_filter_reset_pill', { filter_key: key });
     const defaultsMap: { [T in keyof InvestmentFilterState]?: InvestmentFilterState[T] } = {
         status: InvestmentFilterStatus.ALL,
         type: 'all',
@@ -693,13 +671,11 @@ const App: FC = () => {
   }, []);
 
   const handleApplyCashFlowFilters = (newFilter: CashFlowFilterState) => {
-    trackUserAction('cash_flow_filter_apply');
     setCashFlowFilter(newFilter);
     setIsCashFlowFilterModalOpen(false);
   };
 
   const handleResetCashFlowFilter = useCallback(<K extends keyof CashFlowFilterState>(key: K) => {
-    trackUserAction('cash_flow_filter_reset_pill', { filter_key: key });
     const defaultsMap: { [T in keyof CashFlowFilterState]?: CashFlowFilterState[T] } = {
         period: FilterPeriod.ALL,
     };
@@ -714,7 +690,6 @@ const App: FC = () => {
     newDefaultWallet: string,
     newDeficitThreshold: number
   ) => {
-    trackUserAction("save_settings");
     await db.settings.bulkPut([
       { key: "defaultFilterPeriod", value: newDefaultPeriod },
       { key: "wallets", value: newWallets },
@@ -728,17 +703,7 @@ const App: FC = () => {
     }));
     setIsSettingsModalOpen(false);
   };
-  
-  const handleSetTrackingConsent = async (consent: boolean) => {
-    try {
-      await db.settings.put({ key: 'trackingConsent', value: consent });
-      if (consent) {
-        await trackEvent('consent_given');
-      }
-    } catch (error) {
-      console.error('Error setting tracking consent:', error);
-    }
-  };
+
 
   const closeAllModals = () => {
     setIsFormModalOpen(false);
@@ -890,13 +855,11 @@ const App: FC = () => {
     try {
       await db.transaction('rw', db.transactionItems, db.settings, async () => {
           if (data.id) { // Edit mode
-              await trackUserAction('edit_transaction');
               const txToUpdate = await db.transactionItems.get(data.id);
               if (txToUpdate) {
                   await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
               }
           } else { // Add mode
-              await trackUserAction('add_transaction');
               if (!appFirstUseDate) {
                   await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
               }
@@ -928,7 +891,6 @@ const App: FC = () => {
   };
   
   const handleSaveTransfer = async (data: { amount: number; date: string; fromWallet: string; toWallet: string; description: string }) => {
-    trackUserAction('add_transfer');
     await db.transaction('rw', db.transactionItems, db.settings, async () => {
         if (!appFirstUseDate) {
             await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
@@ -974,7 +936,6 @@ const App: FC = () => {
     const { debtData, createTransaction, wallet } = data;
 
     if (debtData.id) { // Edit mode
-        trackUserAction('edit_debt');
         await db.transaction('rw', db.debts, db.settings, async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
@@ -982,7 +943,6 @@ const App: FC = () => {
             await db.debts.update(debtData.id, debtData);
         });
     } else { // Add mode
-        trackUserAction('add_debt', { create_transaction: createTransaction });
         
         await db.transaction('rw', db.debts, db.transactionItems, db.settings, async () => {
             if (!appFirstUseDate) {
@@ -1034,10 +994,6 @@ const App: FC = () => {
 
         if (data.installmentData.id) {
           // Edit mode
-          trackUserAction("edit_debt_installment", {
-            create_transaction: data.createTransaction,
-            has_surplus: data.createSurplusRecord,
-          });
           await db.transaction(
             "rw",
             db.debtInstallements,
@@ -1070,10 +1026,6 @@ const App: FC = () => {
           );
         } else {
           // Add mode
-          trackUserAction("add_debt_installment", {
-            create_transaction: data.createTransaction,
-            has_surplus: data.createSurplusRecord,
-          });
 
           if (!appFirstUseDate) {
             await db.settings.put({
@@ -1167,7 +1119,6 @@ const App: FC = () => {
     
 
     if (investmentData.id) { // Edit mode
-        trackUserAction('edit_investment');
         await db.transaction('rw', db.investments, db.settings, async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
@@ -1177,10 +1128,6 @@ const App: FC = () => {
         closeAllModals();
     } else { // Add mode
         const contributionAmount = initialContribution || 0;
-        trackUserAction('add_investment', { 
-            with_initial_contribution: !!initialContribution,
-            created_transaction: !!createTransaction 
-        });
         
         await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, db.settings, async () => {
             if (!appFirstUseDate) {
@@ -1231,7 +1178,6 @@ const App: FC = () => {
     const { transactionData, createTransaction, wallet } = data;
 
     if (transactionData.id) { // Edit mode
-        trackUserAction('edit_investment_transaction', { type: transactionData.type });
         await db.transaction('rw', db.investmentTransactions, db.settings, async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
@@ -1239,7 +1185,6 @@ const App: FC = () => {
             await db.investmentTransactions.update(transactionData.id, transactionData);
         });
     } else { // Add mode
-        trackUserAction('add_investment_transaction', { type: transactionData.type, create_transaction: createTransaction });
 
         await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.settings, async () => {
             if (!appFirstUseDate) {
@@ -1296,7 +1241,6 @@ const App: FC = () => {
     else if ('startDate' in itemToDelete) itemType = 'investment';
     else if ('debtId' in itemToDelete ) itemType = 'installment'
     
-    trackUserAction('delete_item', { item_type: itemType });
 
     if ('person' in itemToDelete) { // Debt
         // Ensure installments are included in the same transaction to avoid
@@ -1366,7 +1310,6 @@ const App: FC = () => {
   
   const handleSettleDebt = async (data: { settlementDate: string; createTransaction: boolean; wallet: string }) => {
     if (!settlingDebt) return;
-    trackUserAction('settle_debt', { create_transaction: data.createTransaction });
 
     await db.transaction('rw', db.transactionItems, db.debts, db.debtInstallements, async () => {
 
@@ -1413,7 +1356,6 @@ const App: FC = () => {
 
   const handleForgiveDebt = async () => {
     if (!forgivingDebt) return;
-    trackUserAction('forgive_debt');
 
     await db.debts.update(forgivingDebt.id, { status: DebtStatus.WAIVED });
     closeAllModals();
@@ -1421,7 +1363,6 @@ const App: FC = () => {
 
   const handleUpdateInvestmentValue = async (newValue: number) => {
     if (!updatingInvestment) return;
-    trackUserAction('update_investment_value');
     await db.transaction('rw', db.investments, db.settings, async () => {
       if (!appFirstUseDate) {
         await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
@@ -1433,7 +1374,6 @@ const App: FC = () => {
 
   const handleSellInvestment = async (data: { wallet: string; createTransaction: boolean; sellDate: string }) => {
     if (!sellingInvestment) return;
-    trackUserAction('sell_investment', { create_transaction: data.createTransaction });
 
     await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.investments, async () => {
         const finalWithdrawal: InvestmentTransaction = {
@@ -1477,7 +1417,6 @@ const App: FC = () => {
   };
 
   const handleClearAllData = async () => {
-    trackUserAction('clear_all_data');
     cryptoService.clearKey();
     await db.delete();
     await db.open();
@@ -1815,7 +1754,6 @@ const App: FC = () => {
   }, [investments, investmentTransactions]);
 
   const handleReconcile = async (actualBalance: number) => {
-    trackUserAction('reconcile_balance');
     const difference = actualBalance - currentBalance;
 
     if (Math.abs(difference) < 0.01) {
@@ -1844,7 +1782,6 @@ const App: FC = () => {
 };
 
   const handleExport = async (view: ActiveView) => {
-    trackUserAction('export_data', { view });
     let transactionCSV = '', debtCSV = '', debtInstallmentsCSV = '', investmentCSV = '', investmentTransactionsCSV = '';
     let hasData = false;
 
@@ -1883,7 +1820,6 @@ const App: FC = () => {
   };
   
   const handleExportAllData = async () => {
-    trackUserAction('export_all_data');
     const transactionCSV = generateTransactionsCSV(transactions || []);
     const debtCSV = generateDebtsCSV(debts || []);
     const debtInstallmentsCSV = generateDebtInstallmentsCSV(debtInstallments || []);
@@ -1909,7 +1845,6 @@ const App: FC = () => {
   };
   
   const handleImportData = async (file: File) => {
-    trackUserAction('import_data_start');
     setIsSettingsModalOpen(false);
     
     try {
@@ -2013,20 +1948,6 @@ const App: FC = () => {
         });
 
 
-        trackUserAction('import_data_success', {
-            transactionsAdded: summary.tx.added,
-            transactionsUpdated: summary.tx.updated,
-            debtsAdded: summary.debt.added,
-            debtsUpdated: summary.debt.updated,
-            debtInstallmentsAdded: summary.debtInst.added,
-            debtInstallmentsUpdated: summary.debtInst.updated,
-            investmentsAdded: summary.inv.added,
-            investmentsUpdated: summary.inv.updated,
-            investmentTransactionsAdded: summary.invTx.added,
-            investmentTransactionsUpdated: summary.invTx.updated,
-            parseErrors: allErrors.length,
-            orphanedInvestmentTransactions: orphanedInvestmentTxErrors.length,
-        });
 
         // This ensures the user sees the newly imported data immediately.
         setFilter(prev => ({ ...prev, period: FilterPeriod.ALL, transactionType: TransactionFilterType.ALL, wallet: 'all' }));
@@ -2037,7 +1958,6 @@ const App: FC = () => {
         setImportSummaryModal({ isOpen: true, summary: { ...summary, errors: allErrors } });
 
     } catch (e) {
-        trackUserAction('import_data_failure', { error: e instanceof Error ? e.message : String(e) });
         setImportSummaryModal({ 
             isOpen: true, 
             summary: { 
@@ -2055,14 +1975,12 @@ const App: FC = () => {
   };
   
   const handleShowOnboarding = () => {
-    trackUserAction('show_onboarding');
     setIsSettingsModalOpen(false);
     setShowOnboarding(true);
   };
 
   const handleViewChange = (view: ActiveView) => {
     setActiveView(view);
-    trackUserAction('change_view', { view });
   };
   
   const handleDismissBackupReminder = async () => {
@@ -2070,7 +1988,6 @@ const App: FC = () => {
     dismissUntil.setDate(dismissUntil.getDate() + 3); // Dismiss for 3 days
     await db.settings.put({ key: 'backupReminderDismissedUntil', value: dismissUntil.toISOString() });
     setBackupReminder({ show: false, days: null });
-    trackUserAction('backup_reminder_dismiss');
   };
 
   const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined);
@@ -2375,8 +2292,6 @@ const App: FC = () => {
         onExportAllData={handleExportAllData}
         onImportData={handleImportData}
         onClearAllData={handleOpenClearDataModal}
-        trackingConsent={trackingConsent}
-        onTrackingConsentChange={handleSetTrackingConsent}
         onAlert={showAlert}
       />
       
@@ -2461,13 +2376,6 @@ const App: FC = () => {
           isOpen={importSummaryModal.isOpen}
           onClose={() => setImportSummaryModal({ isOpen: false, summary: null })}
           summary={importSummaryModal.summary}
-        />
-      )}
-
-      {trackingConsent === null && (
-        <TrackingConsentBanner
-            onAllow={() => handleSetTrackingConsent(true)}
-            onDecline={() => handleSetTrackingConsent(false)}
         />
       )}
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
 import { Investment } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface InvestmentFormModalProps {
   isOpen: boolean;
@@ -86,7 +86,6 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
   };
 
   const handleCreateTransactionToggle = (isChecked: boolean) => {
-    trackUserAction('investment_form_toggle_create_transaction', { is_checked: isChecked });
     setCreateTransaction(isChecked);
   };
 

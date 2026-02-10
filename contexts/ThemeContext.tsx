@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import type { FC, ReactNode } from 'react';
-import { trackUserAction } from '../utils/tracking';
+
 
 type Theme = 'light' | 'dark';
 
@@ -55,7 +55,6 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
     setTheme(prevTheme => {
       const newTheme = prevTheme === 'light' ? 'dark' : 'light';
       // Fire and forget - we don't want to block the theme change
-      trackUserAction('change_theme', { theme: newTheme }).catch(console.error);
       return newTheme;
     });
   };

@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import type { FC } from 'react';
 import { ActionType, ActiveView } from '../types';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface AddTransactionButtonProps {
   onQuickAdd: () => void;
@@ -18,7 +18,6 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
 
   const handleSelect = async (type: ActionType) => {
     try {
-      await trackUserAction('fab_option_selected', { type });
       onSelectType(type);
       setIsOpen(false);
     } catch (error) {
@@ -32,7 +31,6 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
       // If a tap action hasn't already been triggered, execute the long-press action.
       if (actionTriggered.current === false) {
         actionTriggered.current = true;
-        trackUserAction('fab_long_press_success').catch(console.error);
         setIsOpen(true); // Open menu on long press
       }
     }, 350); // ms threshold for long press
@@ -50,14 +48,10 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
       actionTriggered.current = true;
       if (isOpen) {
         // If the menu is already open, a quick tap on the button closes it.
-        trackUserAction('fab_close_tap')
-          .catch(error => console.error('Error tracking close tap:', error))
-          .finally(() => setIsOpen(false));
+        setIsOpen(false);
       } else {
         // If the menu is closed, a quick tap triggers the default action.
-        trackUserAction('fab_quick_add_tap', { active_view: activeView })
-          .catch(error => console.error('Error tracking quick add tap:', error))
-          .finally(() => onQuickAdd());
+        onQuickAdd();
       }
     }
   };

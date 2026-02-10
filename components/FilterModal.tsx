@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import { FilterPeriod, FilterState, TransactionFilterType } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -35,7 +35,6 @@ const FilterModal: FC<FilterModalProps> = ({ isOpen, onClose, onApply, onExport,
   };
   
   const handleReset = () => {
-    trackUserAction('transaction_filter_reset_button');
     const resetState: FilterState = {
         period: FilterPeriod.THIS_MONTH,
         startDate: getLocalDateString(), 

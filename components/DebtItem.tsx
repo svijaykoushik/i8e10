@@ -1,7 +1,6 @@
  import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { FC } from "react";
 import { Debt, DebtType, DebtStatus, DebtInstallment } from "../types";
-import { trackUserAction } from "../utils/tracking";
 
 interface DebtItemProps {
   debt: Debt;
@@ -92,7 +91,6 @@ const DebtItem: FC<DebtItemProps> = ({
     e.stopPropagation();
     const willBeOpen = !menuOpen;
     if (willBeOpen) {
-      trackUserAction("open_debt_menu");
     }
     setMenuOpen(willBeOpen);
   };

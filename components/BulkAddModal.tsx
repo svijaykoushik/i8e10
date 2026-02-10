@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { FC } from 'react';
 import { Transaction, TransactionType } from '../types';
 import Modal from './ui/Modal';
-import { trackEvent, trackUserAction } from '../utils/tracking';
+
 
 type ParsedLineValid = {
     id: string; // For React key
@@ -159,9 +159,7 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
     const [commonDate, setCommonDate] = useState(getLocalDateString());
     const [commonWallet, setCommonWallet] = useState('');
     
-    // State for privacy-safe analytics
-    const [wasEdited, setWasEdited] = useState(false);
-    const [initialParseStats, setInitialParseStats] = useState({ total: 0, valid: 0 });
+    // State for analytics
     const savedRef = useRef(false);
     const wasOpenRef = useRef(false);
 
@@ -173,25 +171,12 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
             setLines([]);
             setCommonWallet(wallets.length > 0 ? wallets[0] : '');
             setCommonDate(getLocalDateString());
-            setWasEdited(false);
-            setInitialParseStats({ total: 0, valid: 0 });
             savedRef.current = false;
-        }
-
-        // Modal was just closed
-        if (!isOpen && wasOpenRef.current) {
-             if (view === 'review' && !savedRef.current) {
-                trackEvent('bulk_add_abandon', {
-                    initialTotalLines: initialParseStats.total,
-                    initialValidCount: initialParseStats.valid,
-                    wasEdited: wasEdited,
-                });
-            }
         }
         
         // Update the ref at the end of the effect
         wasOpenRef.current = isOpen;
-    }, [isOpen, view, wasEdited, initialParseStats, wallets]);
+    }, [isOpen, wallets]);
 
     const handleReview = () => {
         const linesToParse = rawText.split('\n').filter(l => l.trim());
@@ -209,21 +194,8 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                 };
             }
         }).filter(Boolean) as ParsedLine[];
-        
-        const stats = {
-            total: linesToParse.length,
-            valid: parsedLines.filter(l => l.isValid).length,
-        };
-        
-        setInitialParseStats(stats);
-        trackUserAction('bulk_add_review', {
-            totalLines: stats.total,
-            parsedValidLines: stats.valid,
-            parsedInvalidLines: stats.total - stats.valid,
-        });
 
         setLines(parsedLines);
-        setWasEdited(false);
         setView('review');
     };
 
@@ -233,13 +205,6 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
             .filter((line): line is ParsedLineValid => line.isValid)
             .map(line => line.data);
 
-        trackUserAction('bulk_add_save', {
-            savedCount: validTransactions.length,
-            initialTotalLines: initialParseStats.total,
-            initialValidCount: initialParseStats.valid,
-            wasEdited: wasEdited,
-        });
-
         if(validTransactions.length > 0) {
             onSave(validTransactions);
         }
@@ -247,9 +212,6 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
     };
     
     const handleUpdateLineData = (id: string, field: keyof ParsedLineValid['data'], value: any) => {
-        if (!wasEdited) {
-            setWasEdited(true);
-        }
         setLines(currentLines => currentLines.map(line => {
             if (line.id === id && line.isValid) {
                 const updatedData = { ...line.data, [field]: value };

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import type { FC, FormEvent } from "react";
 import { Debt, DebtType, DebtInstallment, DebtStatus } from "../types";
 import Modal from "./ui/Modal";
-import { trackUserAction } from "../utils/tracking";
 
 interface DebtInstallmentModalProps {
   isOpen: boolean;
@@ -88,7 +87,7 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
   useEffect(() => {
     if (isOpen && debt) {
       if (isEditMode) {
-        setAmount(installmentToEdit.amount);
+        setAmount(String(installmentToEdit.amount));
         setDate(installmentToEdit.date);
         setNote(installmentToEdit.note || "");
       } else {
@@ -104,9 +103,6 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
   }, [isOpen, debt, wallets, isEditMode, installmentToEdit]);
 
   const handleCreateTransactionToggle = (isChecked: boolean) => {
-    trackUserAction("debt_installment_toggle_create_transaction", {
-      is_checked: isChecked,
-    });
     setCreateTransaction(isChecked);
   };
 

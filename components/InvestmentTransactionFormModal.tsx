@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
 import { Investment, InvestmentTransaction, InvestmentTransactionType } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface InvestmentTransactionFormModalProps {
   isOpen: boolean;
@@ -63,7 +63,6 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
 
   const handleTypeChange = async (newType: InvestmentTransactionType) => {
     try {
-      await trackUserAction('investment_tx_form_change_type', { new_type: newType, previous_type: type });
       setType(newType);
     } catch (error) {
       console.error('Error tracking type change:', error);
@@ -72,7 +71,6 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
 
   const handleCreateTransactionToggle = async (isChecked: boolean) => {
     try {
-      await trackUserAction('investment_tx_form_toggle_create_transaction', { is_checked: isChecked });
       setCreateTransaction(isChecked);
     } catch (error) {
       console.error('Error tracking toggle:', error);

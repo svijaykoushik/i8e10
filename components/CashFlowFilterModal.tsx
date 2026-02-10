@@ -5,7 +5,6 @@ import {
   FilterPeriod,
 } from "../types";
 import Modal from "./ui/Modal";
-import { trackUserAction } from "../utils/tracking";
 
 interface CashFlowFilterModalProps {
   isOpen: boolean;
@@ -45,7 +44,6 @@ const CashFlowFilterModal: FC<CashFlowFilterModalProps> = ({
   };
 
   const handleReset = () => {
-    trackUserAction("cash_flow_filter_reset_button");
     const resetState: CashFlowFilterState = {
       period: FilterPeriod.ALL,
       startDate: getLocalDateString(),

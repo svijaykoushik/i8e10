@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { FC } from 'react';
 import { DebtFilterState, DebtFilterStatus, DebtFilterType, FilterPeriod } from '../types';
 import Modal from './ui/Modal';
-import { trackUserAction } from '../utils/tracking';
+
 
 interface DebtFilterModalProps {
   isOpen: boolean;
@@ -34,7 +34,6 @@ const DebtFilterModal: FC<DebtFilterModalProps> = ({ isOpen, onClose, onApply, o
   };
   
   const handleReset = () => {
-    trackUserAction('debt_filter_reset_button');
     const resetState: DebtFilterState = {
         status: DebtFilterStatus.ALL,
         type: DebtFilterType.ALL,
