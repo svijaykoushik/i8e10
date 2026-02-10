@@ -193,7 +193,7 @@
           </div>
         </div>
 
-        <div class="lg:w-1/2 relative flex items-center justify-center">
+        <div class="lg:w-1/2 relative flex items-center justify-center lg:justify-end">
           <!-- Decorative Elements -->
           <div
             class="absolute inset-0 bg-gradient-to-tr from-brand-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse-slow">
@@ -201,9 +201,16 @@
 
           <!-- Hero Screenshot -->
           <div
-            class="relative w-full max-w-lg rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden glass-card animate-float">
-            <img src="assets/images/pwa-screenshot-wide-hero-view.png" alt="i8·e10 Dashboard Preview"
-              class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity duration-500">
+            class="relative w-full max-w-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden glass-card p-3 animate-float">
+            <!-- Window Controls -->
+            <div class="flex gap-2 mb-3 pl-2">
+              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+              <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
+            </div>
+
+            <img src="assets/images/screenshot_hero.png" alt="i8·e10 Dashboard Preview"
+              class="w-full h-auto rounded-xl object-cover opacity-95 hover:opacity-100 transition-opacity duration-500 shadow-inner">
           </div>
         </div>
       </div>
@@ -272,7 +279,7 @@
           <!-- Screenshot for Bulk/Transactions -->
           <div
             class="glass-card rounded-[2rem] p-4 border border-white/10 overflow-hidden transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-            <img src="assets/images/pwa-screenshot-narrow-transaction.png" alt="Transaction Management"
+            <img src="assets/images/screenshot_bulk_import.png" alt="Transaction Management"
               class="w-full h-auto rounded-xl opacity-90">
           </div>
         </div>
