@@ -59,7 +59,7 @@ const InvestmentSummary: FC<InvestmentSummaryProps> = ({ totalInvested, currentP
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       {/* Portfolio Value Card - HERO */}
-      <div className="bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+      <div className="bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300">Portfolio Value / முதலீடுகளின் மதிப்பு</h3>
           <AnimatedNumber 
