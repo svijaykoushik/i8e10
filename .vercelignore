@@ -1,0 +1,4 @@
+# Ignore documentation
+.ai/
+docs/
+README.md

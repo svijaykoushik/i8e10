@@ -5,6 +5,7 @@ import PasswordSetupModal from './components/auth/PasswordSetupModal';
 import UnlockModal from './components/auth/UnlockModal';
 import BackupReminderBanner from './components/BackupReminderBanner';
 import BalanceSummary from './components/BalanceSummary';
+import InstallAppBanner from './components/InstallAppBanner';
 import BulkAddModal from './components/BulkAddModal';
 import CashFlowFilterModal from './components/CashFlowFilterModal';
 import ClearDataConfirmationModal from './components/ClearDataConfirmationModal';
@@ -35,6 +36,7 @@ import TransactionFormModal from './components/TransactionFormModal';
 import TransactionList from './components/TransactionList';
 import AlertModal from './components/ui/AlertModal';
 import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal';
+import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
@@ -256,6 +258,10 @@ const App: FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>('transactions');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [backupReminder, setBackupReminder] = useState<{ show: boolean; days: number | null }>({ show: false, days: null });
+
+  // A2HS Install Banner — only start engagement timer after unlock + onboarding
+  const installPromptReady = appStatus === 'UNLOCKED' && !!onboardingCompleted;
+  const { showBanner: showInstallBanner, onInstall: handleInstallApp, onDismiss: handleDismissInstall } = useInstallPrompt(installPromptReady);
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -2379,6 +2385,9 @@ const App: FC = () => {
         />
       )}
 
+      {showInstallBanner && (
+        <InstallAppBanner onInstall={handleInstallApp} onDismiss={handleDismissInstall} />
+      )}
     </div>
   );
 };
