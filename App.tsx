@@ -2052,7 +2052,7 @@ const App: FC = () => {
       {(showOnboarding || !onboardingCompleted) && (
         <OnboardingGuide onComplete={handleOnboardingComplete} isRerunnable={showOnboarding} />
       )}
-      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm sticky top-0 z-20">
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-lg sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">i8·e10</h1>
