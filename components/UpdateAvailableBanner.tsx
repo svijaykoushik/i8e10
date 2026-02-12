@@ -9,7 +9,7 @@ interface UpdateAvailableBannerProps {
 const UpdateAvailableBanner: FC<UpdateAvailableBannerProps> = ({ onUpdate, onDismiss }) => {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-20 p-4 animate-slideUp"
+      className="fixed bottom-0 left-0 right-0 z-40 p-4 animate-slideUp"
       role="alert"
       aria-label="Update Available"
     >

@@ -9,7 +9,7 @@ interface InstallAppBannerProps {
 const InstallAppBanner: FC<InstallAppBannerProps> = ({ onInstall, onDismiss }) => {
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-10 p-4 animate-slideUp"
+      className="fixed bottom-0 left-0 right-0 z-40 p-4 animate-slideUp"
       role="note"
       aria-label="Install App"
     >
