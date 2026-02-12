@@ -6,6 +6,7 @@ import UnlockModal from './components/auth/UnlockModal';
 import BackupReminderBanner from './components/BackupReminderBanner';
 import BalanceSummary from './components/BalanceSummary';
 import InstallAppBanner from './components/InstallAppBanner';
+import UpdateAvailableBanner from './components/UpdateAvailableBanner';
 import BulkAddModal from './components/BulkAddModal';
 import CashFlowFilterModal from './components/CashFlowFilterModal';
 import ClearDataConfirmationModal from './components/ClearDataConfirmationModal';
@@ -37,6 +38,7 @@ import TransactionList from './components/TransactionList';
 import AlertModal from './components/ui/AlertModal';
 import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
+import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
@@ -262,6 +264,7 @@ const App: FC = () => {
   // A2HS Install Banner — only start engagement timer after unlock + onboarding
   const installPromptReady = appStatus === 'UNLOCKED' && !!onboardingCompleted;
   const { showBanner: showInstallBanner, onInstall: handleInstallApp, onDismiss: handleDismissInstall } = useInstallPrompt(installPromptReady);
+  const { showBanner: showUpdateBanner, onUpdate: handleUpdateApp, onDismiss: handleDismissUpdate } = useUpdatePrompt();
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -2387,6 +2390,10 @@ const App: FC = () => {
 
       {showInstallBanner && (
         <InstallAppBanner onInstall={handleInstallApp} onDismiss={handleDismissInstall} />
+      )}
+
+      {showUpdateBanner && (
+        <UpdateAvailableBanner onUpdate={handleUpdateApp} onDismiss={handleDismissUpdate} />
       )}
     </div>
   );
