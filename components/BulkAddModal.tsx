@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { FC } from 'react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -26,7 +25,7 @@ interface BulkAddModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (transactions: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'>[]) => void;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -53,7 +52,7 @@ const getYesterdayDateString = () => {
 const parseLine = (
     line: string,
     defaultDate: string,
-    defaultWallet: string
+    defaultWalletId: string
 ): ParsedLine | null => {
     const originalLine = line.trim();
     if (!originalLine) return null;
@@ -147,7 +146,7 @@ const parseLine = (
             amount: Math.abs(amount),
             description,
             date: date || defaultDate,
-            wallet: defaultWallet,
+            walletId: defaultWalletId,
         }
     };
 };
@@ -157,7 +156,7 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
     const [rawText, setRawText] = useState('');
     const [lines, setLines] = useState<ParsedLine[]>([]);
     const [commonDate, setCommonDate] = useState(getLocalDateString());
-    const [commonWallet, setCommonWallet] = useState('');
+    const [commonWalletId, setCommonWalletId] = useState('');
     
     // State for analytics
     const savedRef = useRef(false);
@@ -169,7 +168,7 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
             setView('input');
             setRawText('');
             setLines([]);
-            setCommonWallet(wallets.length > 0 ? wallets[0] : '');
+            setCommonWalletId(wallets.length > 0 ? wallets[0].id : '');
             setCommonDate(getLocalDateString());
             savedRef.current = false;
         }
@@ -183,7 +182,7 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
         const parsedLines = linesToParse.map(line => {
             try {
                 // The parseLine function is designed to not throw, but this adds a safety net.
-                return parseLine(line, commonDate, commonWallet);
+                return parseLine(line, commonDate, commonWalletId);
             } catch (e) {
                 console.error("Critical error parsing line:", line, e);
                 return {
@@ -267,8 +266,8 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                              <div>
                                 <label htmlFor="common-wallet" className={labelClasses}>Default Wallet / இயல்பு கணக்கு</label>
                                 <div className="mt-1">
-                                <select id="common-wallet" value={commonWallet} onChange={(e) => setCommonWallet(e.target.value)} className={inputBaseClasses} required>
-                                        {wallets.map(w => <option key={w} value={w}>{w}</option>)}
+                                <select id="common-wallet" value={commonWalletId} onChange={(e) => setCommonWalletId(e.target.value)} className={inputBaseClasses} required>
+                                        {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                     </select>
                                 </div>
                             </div>
@@ -309,8 +308,8 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                                             </div>
                                             <div className="col-span-7 sm:col-span-4">
                                                 <label className="text-xs font-medium text-slate-500">Wallet</label>
-                                                <select value={line.data.wallet} onChange={e => handleUpdateLineData(line.id, 'wallet', e.target.value)} className={`${inputBaseClasses} !py-1 !px-1.5 text-xs`}>
-                                                    {wallets.map(w => <option key={w} value={w}>{w}</option>)}
+                                                <select value={line.data.walletId} onChange={e => handleUpdateLineData(line.id, 'walletId', e.target.value)} className={`${inputBaseClasses} !py-1 !px-1.5 text-xs`}>
+                                                    {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                                 </select>
                                             </div>
                                             <div className="col-span-5 sm:col-span-3">

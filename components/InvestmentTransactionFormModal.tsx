@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
-import { Investment, InvestmentTransaction, InvestmentTransactionType } from '../types';
+import { Investment, InvestmentTransaction, InvestmentTransactionType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -14,7 +14,7 @@ interface InvestmentTransactionFormModalProps {
   }) => void;
   investment: Investment | null;
   investmentTransactionToEdit: InvestmentTransaction | null;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -38,7 +38,7 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
   const [date, setDate] = useState(getLocalDateString());
   const [notes, setNotes] = useState('');
   const [createTransaction, setCreateTransaction] = useState(true);
-  const [wallet, setWallet] = useState('');
+  const [walletId, setWalletId] = useState('');
 
   const isEditMode = !!investmentTransactionToEdit;
   const investmentForTitle = investment || (investmentTransactionToEdit ? {name: '...'} : null);
@@ -56,7 +56,7 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
             setDate(getLocalDateString());
             setNotes('');
             setCreateTransaction(true);
-            setWallet(wallets.length > 0 ? wallets[0] : '');
+            setWalletId(wallets.length > 0 ? wallets[0].id : '');
         }
     }
   }, [isOpen, investmentTransactionToEdit, isEditMode, wallets]);
@@ -80,7 +80,7 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const parentInvestmentId = investment?.id || investmentTransactionToEdit?.investmentId;
-    if (!parentInvestmentId || !amount || !date || (createTransaction && !wallet && !isEditMode)) return;
+    if (!parentInvestmentId || !amount || !date || (createTransaction && !walletId && !isEditMode)) return;
     
     onSave({
       transactionData: {
@@ -92,7 +92,7 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
         notes,
       },
       createTransaction: !isEditMode && createTransaction,
-      wallet: !isEditMode ? wallet : '',
+      wallet: !isEditMode ? walletId : '',
     });
   };
 
@@ -168,9 +168,9 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
               <div className="animate-fadeInUp" style={{animationDuration: '0.3s'}}>
                 <label htmlFor="wallet-investment-tx" className={labelClasses}>Wallet</label>
                 <div className="mt-2">
-                  <select id="wallet-investment-tx" value={wallet} onChange={(e) => setWallet(e.target.value)} className={inputBaseClasses} required disabled={isEditMode}>
+                  <select id="wallet-investment-tx" value={walletId} onChange={(e) => setWalletId(e.target.value)} className={inputBaseClasses} required disabled={isEditMode}>
                     {wallets.length > 0 ? (
-                        wallets.map(w => <option key={w} value={w}>{w}</option>)
+                        wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
                     ) : (
                         <option value="" disabled>No wallets found</option>
                     )}

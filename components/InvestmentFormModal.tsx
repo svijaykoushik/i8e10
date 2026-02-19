@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
-import { Investment } from '../types';
+import { Investment, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -15,7 +15,7 @@ interface InvestmentFormModalProps {
     wallet?: string;
   }) => void;
   investmentToEdit?: Investment | null;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -41,7 +41,7 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
   const [currentValue, setCurrentValue] = useState('');
   const [isCurrentValueManuallySet, setIsCurrentValueManuallySet] = useState(false);
   const [createTransaction, setCreateTransaction] = useState(true);
-  const [wallet, setWallet] = useState('');
+  const [walletId, setWalletId] = useState('');
   
   const isEditMode = !!investmentToEdit;
 
@@ -67,7 +67,7 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
         setCurrentValue('');
         setIsCurrentValueManuallySet(false);
         setCreateTransaction(true);
-        setWallet(wallets.length > 0 ? wallets[0] : '');
+        setWalletId(wallets.length > 0 ? wallets[0].id : '');
       }
     }
   }, [isOpen, investmentToEdit, isEditMode, wallets]);
@@ -107,7 +107,7 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
       initialContribution: !isEditMode && contributionAmount > 0 ? contributionAmount : undefined,
       currentValue: !isEditMode && currentValueAmount > 0 ? currentValueAmount : undefined,
       createTransaction: !isEditMode && contributionAmount > 0 ? createTransaction : undefined,
-      wallet: !isEditMode && contributionAmount > 0 && createTransaction ? wallet : undefined,
+      wallet: !isEditMode && contributionAmount > 0 && createTransaction ? walletId : undefined,
     });
     onClose();
   };
@@ -188,9 +188,9 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
                     <div>
                         <label htmlFor="wallet-investment" className={labelClasses}>Deduct from wallet / கணக்கிலிருந்து கழிக்கவும்</label>
                         <div className="mt-2">
-                            <select name="wallet-investment" id="wallet-investment" value={wallet} onChange={(e) => setWallet(e.target.value)} className={inputBaseClasses} required>
+                            <select name="wallet-investment" id="wallet-investment" value={walletId} onChange={(e) => setWalletId(e.target.value)} className={inputBaseClasses} required>
                                 {wallets.length > 0 ? (
-                                    wallets.map(w => <option key={w} value={w}>{w}</option>)
+                                    wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
                                 ) : (
                                     <option value="" disabled>No wallets found</option>
                                 )}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
-import { FilterPeriod } from '../types';
+import { FilterPeriod, Wallet } from '../types';
 import Modal from './ui/Modal';
 import useTheme from '../hooks/useTheme';
 
@@ -10,11 +10,11 @@ interface SettingsModalProps {
   onClose: () => void;
   currentDefault: FilterPeriod;
   currentDefaultWallet: string;
-  wallets: string[];
+  wallets: Wallet[];
   currentDeficitThreshold: number;
   onSave: (
     newDefault: FilterPeriod,
-    newWallets: string[],
+    newWallets: Wallet[],
     newDefaultWallet: string,
     newDeficitThreshold: number
   ) => void;
@@ -43,8 +43,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>(currentDefault);
   const [selectedWallet, setSelectedWallet] = useState<string>(currentDefaultWallet);
-  const [editableWallets, setEditableWallets] = useState<string[]>([]);
-  const [newWallet, setNewWallet] = useState('');
+  const [editableWallets, setEditableWallets] = useState<Wallet[]>([]);
+  const [newWalletName, setNewWalletName] = useState('');
   const [deficitThreshold, setDeficitThreshold] = useState<string>(currentDeficitThreshold.toString());
   const { theme, toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,17 +53,18 @@ const SettingsModal: FC<SettingsModalProps> = ({
     if (isOpen) {
       setSelectedPeriod(currentDefault);
       setSelectedWallet(currentDefaultWallet);
-      setEditableWallets(wallets);
+      // Create a shallow copy to avoid mutating props directly
+      setEditableWallets([...wallets]);
       setDeficitThreshold(currentDeficitThreshold.toString());
-      setNewWallet('');
+      setNewWalletName('');
     }
   }, [isOpen, currentDefault, currentDefaultWallet, wallets, currentDeficitThreshold]);
 
   const handleSave = () => {
     // Fallback to 'all' if the selected default wallet was deleted during this session
-    const finalSelectedWallet = (selectedWallet === 'all' || editableWallets.includes(selectedWallet))
-      ? selectedWallet
-      : 'all';
+    // selectedWallet is an ID. Check if it exists in editableWallets.
+    const walletExists = selectedWallet === 'all' || editableWallets.some(w => w.id === selectedWallet);
+    const finalSelectedWallet = walletExists ? selectedWallet : 'all';
 
     const finalThreshold = parseFloat(deficitThreshold);
     const validThreshold = isNaN(finalThreshold) ? 0 : Math.abs(finalThreshold);
@@ -72,15 +73,33 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleAddWallet = () => {
-    if (newWallet.trim() && !editableWallets.includes(newWallet.trim())) {
-      setEditableWallets([...editableWallets, newWallet.trim()]);
-      setNewWallet('');
+    const name = newWalletName.trim();
+    if (name) {
+        // Check for duplicate names
+        if (editableWallets.some(w => w.name.toLowerCase() === name.toLowerCase())) {
+            onAlert("Duplicate Wallet", "A wallet with this name already exists.");
+            return;
+        }
+
+        const newWallet: Wallet = {
+            id: crypto.randomUUID(),
+            name: name,
+            type: 'other', // Default type
+            isDefault: false,
+            isArchived: false
+        };
+        
+        setEditableWallets([...editableWallets, newWallet]);
+        setNewWalletName('');
     }
   };
 
-  const handleDeleteWallet = (walletToDelete: string) => {
+  const handleDeleteWallet = (walletId: string) => {
     if (editableWallets.length > 1) {
-        setEditableWallets(editableWallets.filter(w => w !== walletToDelete));
+        setEditableWallets(editableWallets.filter(w => w.id !== walletId));
+        if (selectedWallet === walletId) {
+            setSelectedWallet('all');
+        }
     } else {
         onAlert("Action Not Allowed", "You must have at least one wallet.");
     }
@@ -187,7 +206,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
             >
               <option value="all">All Wallets / அனைத்தும்</option>
               {editableWallets.map(wallet => (
-                <option key={wallet} value={wallet}>{wallet}</option>
+                <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
               ))}
             </select>
           </div>
@@ -226,9 +245,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
             </p>
             <div className="mt-2 space-y-2">
                 {editableWallets.map(wallet => (
-                    <div key={wallet} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">
-                        <span className="text-slate-800 dark:text-slate-100">{wallet}</span>
-                        <button onClick={() => handleDeleteWallet(wallet)} className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
+                    <div key={wallet.id} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">
+                        <span className="text-slate-800 dark:text-slate-100">{wallet.name}</span>
+                        <button onClick={() => handleDeleteWallet(wallet.id)} className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                         </button>
                     </div>
@@ -237,8 +256,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
             <div className="mt-3 flex gap-2">
                 <input
                     type="text"
-                    value={newWallet}
-                    onChange={(e) => setNewWallet(e.target.value)}
+                    value={newWalletName}
+                    onChange={(e) => setNewWalletName(e.target.value)}
                     placeholder="Add new wallet name"
                     className={inputBaseClasses}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddWallet()}

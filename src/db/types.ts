@@ -4,6 +4,7 @@ import type {
   Investment,
   InvestmentTransaction,
   DebtInstallment,
+  Wallet,
 } from "../../types";
 
 // Minimal database interface used by CustomCollection to avoid circular import
@@ -84,6 +85,7 @@ export interface DatabaseSchema {
   investmentTransactions: Table<InvestmentTransaction, string>;
   debtInstallments: Table<DebtInstallment>;
   settings: Table<AppSetting, string>;
+  wallets: Table<Wallet, string>; // Added wallets to DatabaseSchema
 }
 
 export interface Middleware {

@@ -1,10 +1,10 @@
 
-import { Transaction, Debt, Investment, InvestmentTransaction, DebtInstallment, DebtStatus } from '../types';
+import { Transaction, Debt, Investment, InvestmentTransaction, DebtInstallment, DebtStatus, Wallet } from '../types';
 
-export const generateTransactionsCSV = (transactions: Transaction[]): string => {
+export const generateTransactionsCSV = (transactions: Transaction[], wallets?: Wallet[]): string => {
   if (transactions.length === 0) return '';
 
-  const headers = ['ID', 'Type (வகை)', 'Date (தேதி)', 'Amount (தொகை)', 'Description (விளக்கம்)', 'Wallet (கணக்கு)', 'Is Adjustment'];
+  const headers = ['ID', 'Type (வகை)', 'Date (தேதி)', 'Amount (தொகை)', 'Description (விளக்கம்)', 'Wallet (கணக்கு)', 'Wallet ID', 'Is Adjustment'];
   const csvRows = [headers.join(',')];
 
   transactions.forEach(tx => {
@@ -13,14 +13,35 @@ export const generateTransactionsCSV = (transactions: Transaction[]): string => 
       tx.type === 'income' ? 'Income (வரவு)' : 'Expense (செலவு)',
       tx.date,
       tx.amount,
-      `"${tx.description.replace(/"/g, '""')}"`,
-      `"${(tx.wallet || '').replace(/"/g, '""')}"`,
+      tx.description ? `"${tx.description.replace(/"/g, '""')}"` : "",
+      wallets ? `"${(wallets.find(w => w.id === tx.walletId)?.name || (tx as any).wallet || '').replace(/"/g, '""')}"` : `"${((tx as any).wallet || '').replace(/"/g, '""')}"`,
+      `"${(tx.walletId || '').replace(/"/g, '""')}"`,
       tx.isReconciliation ? 'Yes' : 'No'
     ];
     csvRows.push(row.join(','));
   });
 
   return csvRows.join('\n');
+};
+
+export const generateWalletsCSV = (wallets: Wallet[]): string => {
+    if (wallets.length === 0) return '';
+
+    const headers = ['ID', 'Name', 'Type', 'Is Default', 'Is Archived'];
+    const csvRows = [headers.join(',')];
+
+    wallets.forEach(w => {
+        const row = [
+            w.id,
+            `"${w.name.replace(/"/g, '""')}"`,
+            w.type,
+            w.isDefault ? 'Yes' : 'No',
+            w.isArchived ? 'Yes' : 'No'
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    return csvRows.join('\n');
 };
 
 export const generateDebtsCSV = (

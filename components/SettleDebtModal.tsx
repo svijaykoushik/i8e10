@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect, useMemo } from 'react';
 import type { FC } from 'react';
-import { Debt, DebtInstallment, DebtType } from '../types';
+import { Debt, DebtInstallment, DebtType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 interface SettleDebtModalProps {
@@ -11,7 +10,7 @@ interface SettleDebtModalProps {
   onConfirm: (data: { settlementDate: string; createTransaction: boolean; wallet: string }) => void;
   debt: Debt | null;
   installments: DebtInstallment[] | null;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -25,13 +24,13 @@ const getLocalDateString = () => {
 const SettleDebtModal: FC<SettleDebtModalProps> = ({ isOpen, onClose, onConfirm, debt, installments, wallets }: SettleDebtModalProps) => {
   const [settlementDate, setSettlementDate] = useState(getLocalDateString());
   const [createTransaction, setCreateTransaction] = useState(true);
-  const [wallet, setWallet] = useState('');
+  const [walletId, setWalletId] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setSettlementDate(getLocalDateString());
       setCreateTransaction(true);
-      setWallet(wallets.length > 0 ? wallets[0] : '');
+      setWalletId(wallets.length > 0 ? wallets[0].id : '');
     }
   }, [isOpen, wallets]);
   
@@ -52,7 +51,7 @@ const { paidAmount, remainingAmount } = useMemo(() => {
   const transactionColor = isLent ? 'text-green-500' : 'text-red-500';
 
   const handleConfirm = () => {
-    onConfirm({ settlementDate, createTransaction, wallet });
+    onConfirm({ settlementDate, createTransaction, wallet: walletId });
   };
 
   const labelClasses = "block text-sm font-medium leading-6 text-slate-900 dark:text-slate-100";
@@ -138,9 +137,9 @@ const { paidAmount, remainingAmount } = useMemo(() => {
                   Wallet / கணக்கு
                 </label>
                 <div className="mt-2">
-                  <select name="wallet-settle" id="wallet-settle" value={wallet} onChange={(e) => setWallet(e.target.value)} className={inputBaseClasses} required>
+                  <select name="wallet-settle" id="wallet-settle" value={walletId} onChange={(e) => setWalletId(e.target.value)} className={inputBaseClasses} required>
                     {wallets.length > 0 ? (
-                        wallets.map(w => <option key={w} value={w}>{w}</option>)
+                        wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
                     ) : (
                         <option value="" disabled>No wallets found</option>
                     )}

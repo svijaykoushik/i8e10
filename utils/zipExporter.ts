@@ -36,7 +36,7 @@ interface ExportData {
     investmentTransactionsCSV?: string;
 }
 
-export const exportToZip = async (data: ExportData) => {
+export const exportToZip = async (data: ExportData): Promise<Blob> => {
     try {
         const JSZip = await loadJsZip();
         const zip = new JSZip();
@@ -58,16 +58,7 @@ export const exportToZip = async (data: ExportData) => {
         }
 
         const content = await zip.generateAsync({ type: "blob" });
-
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(content);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'i8e10-export.zip');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        return content;
 
     } catch (error) {
         console.error("Failed to create zip file:", error);

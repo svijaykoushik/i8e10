@@ -5,6 +5,7 @@ import type {
   Investment,
   InvestmentTransaction,
   DebtInstallment,
+  Wallet,
 } from "../types";
 import type {
   AppSetting,
@@ -26,7 +27,8 @@ type Model =
   | Investment
   | InvestmentTransaction
   | DebtInstallment
-  | AppSetting;
+  | AppSetting
+  | Wallet;
 
 // Small helper that normalizes access to core table
 const getCoreTable = async <N extends keyof DatabaseSchema>(
@@ -235,7 +237,8 @@ type TableName =
   | "debts"
   | "investments"
   | "investmentTransactions"
-  | "settings";
+  | "settings"
+  | "wallets";
 
 interface DBTransaction {
   // Signature 1: db.transaction('rw', callback) => ALL tables
@@ -270,6 +273,7 @@ interface DB {
   investmentTransactions: TableProxy<InvestmentTransaction>;
   debtInstallements: TableProxy<DebtInstallment>;
   settings: TableProxy<AppSetting>;
+  wallets: TableProxy<Wallet>;
 
   // A helper structure to map names to proxies, useful for transaction overloads
   readonly tables: {
@@ -278,6 +282,7 @@ interface DB {
     investments: TableProxy<Investment>;
     investmentTransactions: TableProxy<InvestmentTransaction>;
     settings: TableProxy<AppSetting>;
+    wallets: TableProxy<Wallet>;
   };
 
   // 2. Utility Methods
@@ -293,6 +298,7 @@ interface DB {
   // Methods added at the end of the file
   delete(): Promise<void>;
   open(): Promise<void>;
+  close(): void;
 }
 
 // Transaction Callback Type
@@ -311,6 +317,7 @@ export const db: DB = {
     "investmentTransactions"
   ),
   settings: new TableProxy<AppSetting>("settings"),
+  wallets: new TableProxy<Wallet>("wallets"),
 
   // Helper object for table properties
   tables: {
@@ -321,6 +328,7 @@ export const db: DB = {
       "investmentTransactions"
     ),
     settings: new TableProxy<AppSetting>("settings"),
+    wallets: new TableProxy<Wallet>("wallets"),
   },
 
   // transaction shim: support multiple signatures used across the app
@@ -343,6 +351,7 @@ export const db: DB = {
           "investments",
           "investmentTransactions",
           "settings",
+          "wallets",
         ];
         callback = rest[0];
       } else {
@@ -386,7 +395,8 @@ export const db: DB = {
           "debts",
           "investments",
           "investmentTransactions",
-          "settings"
+          "settings",
+          "wallets"
         ];
         await Promise.all(allTables.map((table)=>coreDb.truncate(table)));
         return;
@@ -405,6 +415,10 @@ export const db: DB = {
       throw error;
     }
   },
+
+  close() {
+    coreDb.close();
+  },
 };
 
 export const applyEncryptionMiddleware = (cs = cryptoService) => {
@@ -422,6 +436,7 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
     investmentTransactions: ["amount", "notes"],
     debtInstallments: ["amount", "note"],
     settings: [],
+    wallets: ["name"],
   } as const;
 
   function isModel(value: unknown): value is Model {

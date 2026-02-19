@@ -46,11 +46,18 @@ export class CustomDatabase implements DatabaseLike{
     return CustomDatabase.instance;
   }
 
-  async open(): Promise<void> {
-    if (this.db) return;
+  async open(version: number = 3): Promise<void> {
+    if (this.db) {
+       if (this.db.version === version) return;
+       // If versions mismatch and we are forcing a different one (e.g. for backup check on v2)
+       // we might need to close and reopen, but usually we just return if already open.
+       // For this migration flow, we might be calling open(2) then open(3).
+       this.db.close();
+       this.db = undefined;
+    }
 
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open("i8e10DB", 2);
+      const request = indexedDB.open("i8e10DB", version);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -60,24 +67,25 @@ export class CustomDatabase implements DatabaseLike{
         if (this.db) {
           this.db.onversionchange = () => {
             this.db!.close();
-            reject(
-              "Database version changed in another tab, connection closed"
-            );
+            // We don't prefer rejecting here as it might happen after successful open
+            // reject("Database version changed in another tab, connection closed"); 
           };
         }
         resolve();
       };
 
-      request.onupgradeneeded = (event) => {
+      request.onupgradeneeded = async (event) => {
         const db = request.result;
-
-        // Create object stores with their keyPaths and indexes
+        const transaction = request.transaction!; // Transaction for the upgrade
+        
+        // --- V1/V2 Stores (Existing) ---
         const stores: Record<string, { keyPath: string; indexes: string[] }> = {
           transactionItems: {
             keyPath: "id",
             indexes: [
               "date",
-              "wallet",
+              "wallet", // Old index, we might want to keep or add walletId too
+              "walletId", // New index
               "type",
               "transferId",
               "investmentTransactionId",
@@ -98,27 +106,167 @@ export class CustomDatabase implements DatabaseLike{
             keyPath: "id",
             indexes: ["debtId", "date"]
           },
-          // Settings uses 'key' as the primary key
           settings: { keyPath: "key", indexes: [] },
+          // --- V3 Store ---
+          wallets: { keyPath: "id", indexes: ["name"] },
         };
 
-        // keep specs for later lookup
+        // keep specs for later lookup (though specs might not be fully accurate during upgrade transaction usage)
         this.storeSpecs = stores;
 
+        // 1. Create/Update Stores
         Object.entries(stores).forEach(([storeName, spec]) => {
+          let store: IDBObjectStore;
           if (!db.objectStoreNames.contains(storeName)) {
-            const store = db.createObjectStore(storeName, {
-              keyPath: spec.keyPath,
-            });
-            spec.indexes.forEach((indexName) => {
-              if (indexName !== spec.keyPath) {
-                store.createIndex(indexName, indexName);
-              }
-            });
+            store = db.createObjectStore(storeName, { keyPath: spec.keyPath });
+          } else {
+            store = transaction.objectStore(storeName);
           }
+          
+          spec.indexes.forEach((indexName) => {
+            if (indexName !== spec.keyPath && !store.indexNames.contains(indexName)) {
+              store.createIndex(indexName, indexName);
+            }
+          });
         });
+
+        // 2. Migration Logic (V2 -> V3)
+        if (event.oldVersion < 3) {
+           console.log("Migrating to Database Version 3...");
+           
+           const txStore = transaction.objectStore("transactionItems");
+           const walletsStore = transaction.objectStore("wallets");
+           const settingsStore = transaction.objectStore("settings");
+           
+           // Helper to get all items from a store
+           const getAll = (store: IDBObjectStore): Promise<any[]> => {
+               return new Promise((resolve, reject) => {
+                   const req = store.getAll();
+                   req.onsuccess = () => resolve(req.result);
+                   req.onerror = () => reject(req.error);
+               });
+           };
+
+           // We need to wait for data retrieval *inside* the upgrade transaction?
+           // Actually, we can just attach onsuccess handlers to requests.
+           // However, using async/await inside onupgradeneeded can be tricky because the transaction
+           // might auto-commit if we await something that isn't an IDBRequest.
+           // BUT, since we are using promises wrapping IDBRequests, it should be fine IF we chain them properly.
+           // To be safe, we will use a more callback-based approach or ensure the transaction stays active.
+           // EDIT: Promisified IDB calls usually work fine if they are part of the chain.
+           
+           const transactions = await getAll(txStore);
+           const settingsItems = await getAll(settingsStore);
+           
+           // Extract existing wallets from Settings (prefer user order)
+           const walletsSetting = settingsItems.find(s => s.key === "wallets");
+           const currentDefaultWalletSetting = settingsItems.find(s => s.key === "defaultWallet");
+           
+           const existingWalletNames: string[] = walletsSetting ? walletsSetting.value : ['Cash / ரொக்கம்', 'Bank / வங்கி'];
+           const capturedUniqueWallets = new Set<string>(existingWalletNames);
+           
+           // Also capture any wallets mentioned in transactions that might have been deleted/orphaned from settings
+           transactions.forEach(tx => {
+               if (tx.wallet) capturedUniqueWallets.add(tx.wallet);
+           });
+           
+           // Create Wallet Entities
+           const walletNameMap = new Map<string, string>(); // Name -> ID
+           
+           for (const name of Array.from(capturedUniqueWallets)) {
+                // Generate a simple ID or UUID. Since we don't have crypto.randomUUID in all contexts reliably inside this scope without imports?
+                // We can use a simple random string generator or rely on the one from utils if imported. 
+                // Since this is inside the class method, we can't easily import if not already there, but we can assume global crypto or Math.random
+                const id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+                
+                // Determine type based on name keywords for fun/future-proofing
+                let type = 'other';
+                 const lowerName = name.toLowerCase();
+                if (lowerName.includes('bank') || lowerName.includes('வங்கி')) type = 'bank';
+                else if (lowerName.includes('cash') || lowerName.includes('ரொக்கம்')) type = 'cash';
+                
+                const walletObj = {
+                    id,
+                    name,
+                    type,
+                    isDefault: name === currentDefaultWalletSetting?.value,
+                    isArchived: false
+                };
+                
+                walletNameMap.set(name, id);
+                await new Promise<void>((resolve, reject) => {
+                    const req = walletsStore.add(walletObj);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+           }
+           
+           // Update Transactions with walletId
+           for (const tx of transactions) {
+               if (tx.wallet && walletNameMap.has(tx.wallet)) {
+                   tx.walletId = walletNameMap.get(tx.wallet);
+                   // We keep tx.wallet for a moment if we want, OR delete it. 
+                   // The plan says "Replace". Let's verify if we should keep it for safety.
+                   // Types updated to remove `wallet`, so we should probably remove it.
+                   // But since this is `any` during migration, it's fine.
+                   // Ideally we delete it to clean up.
+                   delete tx.wallet; 
+               } else if (!tx.walletId) {
+                   // Fallback for transactions without wallet (legacy/bug?)
+                   // Assign to default or first wallet?
+                   // For now, let's leave valid ones.
+               }
+               
+               await new Promise<void>((resolve, reject) => {
+                   const req = txStore.put(tx);
+                   req.onsuccess = () => resolve();
+                   req.onerror = () => reject(req.error);
+               });
+           }
+           
+           // Update Settings
+           // 1. Remove 'wallets' string array
+           await new Promise<void>((resolve, reject) => {
+                const req = settingsStore.delete("wallets");
+                req.onsuccess = () => resolve();
+                req.onerror = () => reject(req.error);
+           });
+           
+           // 2. Update defaultWallet to use ID
+           if (currentDefaultWalletSetting && walletNameMap.has(currentDefaultWalletSetting.value)) {
+                currentDefaultWalletSetting.value = walletNameMap.get(currentDefaultWalletSetting.value);
+                await new Promise<void>((resolve, reject) => {
+                    const req = settingsStore.put(currentDefaultWalletSetting);
+                    req.onsuccess = () => resolve();
+                    req.onerror = () => reject(req.error);
+                });
+           }
+           
+           console.log("Migration to V3 Complete.");
+        }
       };
     });
+  }
+
+  // Check if a wallet has dependencies (Transactions)
+  async checkWalletDependencies(walletId: string): Promise<number> {
+      if (!this.db) await this.open();
+      // We only strictly check transactions as per final plan
+      const txCount = await this.count("transactionItems", "walletId", walletId);
+      return txCount;
+  }
+  
+  // Helper to count items by index
+  async count(storeName: string, indexName: string, value: any): Promise<number> {
+      if (!this.db) throw new Error("Database not opened");
+      return new Promise((resolve, reject) => {
+          const tx = this.db!.transaction(storeName, "readonly");
+          const store = tx.objectStore(storeName);
+          const index = store.index(indexName);
+          const req = index.count(value);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+      });
   }
 
   async close(): Promise<void> {

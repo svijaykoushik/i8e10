@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import type { FC, FormEvent } from "react";
-import { Debt, DebtType, DebtInstallment, DebtStatus } from "../types";
+import { Debt, DebtType, DebtInstallment, DebtStatus, Wallet } from "../types";
 import Modal from "./ui/Modal";
 
 interface DebtInstallmentModalProps {
@@ -16,7 +16,7 @@ interface DebtInstallmentModalProps {
   debt: Debt | null;
   installmentToEdit: DebtInstallment;
   installmentsForDebt: DebtInstallment[];
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -41,12 +41,12 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
   const [note, setNote] = useState("");
   const [createTransaction, setCreateTransaction] = useState(true);
   const [markAsSettled, setMarkAsSettled] = useState(false);
-  const [wallet, setWallet] = useState("");
+  const [walletId, setWalletId] = useState("");
   const [createSurplusRecord, setCreateSurplusRecord] = useState(false);
 
   const markAsSettledRef = useRef(markAsSettled);
 
-  const isMarkAsSettledDirty = markAsSettled !== markAsSettledRef.currentValue;
+  const isMarkAsSettledDirty = markAsSettled !== markAsSettledRef.current;
 
   const isEditMode = !!installmentToEdit;
 
@@ -96,7 +96,7 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
         setNote("");
         setCreateTransaction(true);
         setMarkAsSettled(false);
-        setWallet(wallets.length > 0 ? wallets[0] : "");
+        setWalletId(wallets.length > 0 ? wallets[0].id : "");
         setCreateSurplusRecord(false);
       }
     }
@@ -108,7 +108,7 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!amount || !date || (createTransaction && !wallet && !isEditMode)) return;
+    if (!amount || !date || (createTransaction && !walletId && !isEditMode)) return;
 
     onSave({
       installmentData: ({
@@ -116,11 +116,11 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
         amount: parseFloat(amount),
         date,
         note,
-        debtId: debt.id
+        debtId: debt?.id
       } as DebtInstallment),
       createTransaction: !isEditMode && createTransaction,
       markAsSettled,
-      wallet: !isEditMode ? wallet : '',
+      wallet: !isEditMode ? walletId : '',
       createSurplusRecord,
     });
   };
@@ -272,16 +272,16 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
                 <select
                   name="wallet-inst"
                   id="wallet-inst"
-                  value={wallet}
-                  onChange={(e) => setWallet(e.target.value)}
+                  value={walletId}
+                  onChange={(e) => setWalletId(e.target.value)}
                   className={inputBaseClasses}
                   required
                   disabled={isEditMode}
                 >
                   {wallets.length > 0 ? (
                     wallets.map((w) => (
-                      <option key={w} value={w}>
-                        {w}
+                      <option key={w.id} value={w.id}>
+                        {w.name}
                       </option>
                     ))
                   ) : (
