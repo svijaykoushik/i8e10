@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC, FormEvent } from 'react';
-import { Debt, DebtType } from '../types';
+import { Debt, DebtType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -14,7 +14,7 @@ interface DebtFormModalProps {
   }) => void;
   debtToEdit?: Debt | null;
   initialType?: DebtType;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -39,7 +39,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(getLocalDateString());
   const [createTransaction, setCreateTransaction] = useState(false);
-  const [wallet, setWallet] = useState('');
+  const [walletId, setWalletId] = useState('');
   const personInputRef = useRef<HTMLInputElement>(null);
   
   const isEditMode = !!debtToEdit;
@@ -59,7 +59,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
         setDescription('');
         setDate(getLocalDateString());
         setCreateTransaction(false);
-        setWallet(wallets.length > 0 ? wallets[0] : '');
+        setWalletId(wallets.length > 0 ? wallets[0].id : '');
       }
       setTimeout(() => personInputRef.current?.focus(), 50);
     }
@@ -83,7 +83,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!amount || !date || !person || (createTransaction && !wallet)) return;
+    if (!amount || !date || !person || (createTransaction && !walletId)) return;
     
     onSave({
       debtData: {
@@ -95,7 +95,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
         date,
       },
       createTransaction: !isEditMode && createTransaction,
-      wallet,
+      wallet: walletId,
     });
   };
   
@@ -187,9 +187,9 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
                   Wallet / கணக்கு
                 </label>
                 <div className="mt-2">
-                  <select name="wallet" id="wallet" value={wallet} onChange={(e) => setWallet(e.target.value)} className={inputBaseClasses} required>
+                  <select name="wallet" id="wallet" value={walletId} onChange={(e) => setWalletId(e.target.value)} className={inputBaseClasses} required>
                     {wallets.length > 0 ? (
-                        wallets.map(w => <option key={w} value={w}>{w}</option>)
+                        wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
                     ) : (
                         <option value="" disabled>No wallets found</option>
                     )}

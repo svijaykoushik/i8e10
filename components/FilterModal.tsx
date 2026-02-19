@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FC } from 'react';
-import { FilterPeriod, FilterState, TransactionFilterType } from '../types';
+import { FilterPeriod, FilterState, TransactionFilterType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -10,7 +10,7 @@ interface FilterModalProps {
   onApply: (newFilter: FilterState) => void;
   onExport: () => void;
   initialFilter: FilterState;
-  wallets: string[];
+  wallets: Wallet[];
 }
 
 const getLocalDateString = () => {
@@ -39,7 +39,7 @@ const FilterModal: FC<FilterModalProps> = ({ isOpen, onClose, onApply, onExport,
         period: FilterPeriod.THIS_MONTH,
         startDate: getLocalDateString(), 
         endDate: getLocalDateString(),
-        wallet: 'all',
+        walletId: 'all',
         transactionType: TransactionFilterType.ALL,
     };
     setModalFilter(resetState);
@@ -128,13 +128,13 @@ const FilterModal: FC<FilterModalProps> = ({ isOpen, onClose, onApply, onExport,
             <label htmlFor="filter-wallet" className={labelClasses}>Wallet / கணக்கு</label>
             <select
                 id="filter-wallet"
-                value={modalFilter.wallet}
-                onChange={(e) => handleFilterChange('wallet', e.target.value)}
+                value={modalFilter.walletId}
+                onChange={(e) => handleFilterChange('walletId', e.target.value)}
                 className={inputClasses}
             >
                 <option value="all">All Wallets / அனைத்தும்</option>
                 {wallets.map(wallet => (
-                    <option key={wallet} value={wallet}>{wallet}</option>
+                    <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
                 ))}
             </select>
         </div>

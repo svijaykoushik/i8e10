@@ -7,13 +7,21 @@ export enum TransactionType {
   EXPENSE = 'expense',
 }
 
+export interface Wallet {
+  id: string;
+  name: string;
+  type: 'cash' | 'bank' | 'credit_card' | 'other';
+  isDefault?: boolean;
+  isArchived?: boolean;
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
   date: string; // YYYY-MM-DD format
   amount: number;
   description: string;
-  wallet?: string;
+  walletId: string; // Foreign key to Wallet
   isReconciliation?: boolean;
   transferId?: string;
   investmentTransactionId?: string;
@@ -107,7 +115,7 @@ export interface FilterState {
   period: FilterPeriod;
   startDate: string;
   endDate: string;
-  wallet: string;
+  walletId: string;
   transactionType: TransactionFilterType;
 }
 

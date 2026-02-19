@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect } from 'react';
 import type { FC } from 'react';
-import { Investment } from '../types';
+import { Investment, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 interface SellInvestmentModalProps {
@@ -10,7 +9,7 @@ interface SellInvestmentModalProps {
   onClose: () => void;
   onConfirm: (data: { wallet: string; createTransaction: boolean; sellDate: string }) => void;
   investment: Investment | null;
-  wallets: string[];
+  wallets: Wallet[];
   onAlert: (title: string, message: string) => void;
 }
 
@@ -24,13 +23,13 @@ const getLocalDateString = () => {
 
 
 const SellInvestmentModal: FC<SellInvestmentModalProps> = ({ isOpen, onClose, onConfirm, investment, wallets, onAlert }) => {
-  const [wallet, setWallet] = useState('');
+  const [walletId, setWalletId] = useState('');
   const [createTransaction, setCreateTransaction] = useState(true);
   const [sellDate, setSellDate] = useState(getLocalDateString());
 
   useEffect(() => {
     if (isOpen) {
-      setWallet(wallets.length > 0 ? wallets[0] : '');
+      setWalletId(wallets.length > 0 ? wallets[0].id : '');
       setCreateTransaction(true);
       setSellDate(getLocalDateString());
     }
@@ -41,11 +40,11 @@ const SellInvestmentModal: FC<SellInvestmentModalProps> = ({ isOpen, onClose, on
   const formattedAmount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(investment.currentValue);
   
   const handleConfirm = () => {
-    if (createTransaction && !wallet) {
+    if (createTransaction && !walletId) {
       onAlert("Wallet Required", "Please select a wallet to record the transaction.");
       return;
     }
-    onConfirm({ wallet, createTransaction, sellDate });
+    onConfirm({ wallet: walletId, createTransaction, sellDate });
   };
   
   const footer = (
@@ -115,13 +114,13 @@ const SellInvestmentModal: FC<SellInvestmentModalProps> = ({ isOpen, onClose, on
                 <div className="mt-2">
                     <select 
                         id="wallet-sell" 
-                        value={wallet} 
-                        onChange={(e) => setWallet(e.target.value)} 
+                        value={walletId} 
+                        onChange={(e) => setWalletId(e.target.value)} 
                         className={inputBaseClasses} 
                         required
                     >
                         {wallets.length > 0 ? (
-                            wallets.map(w => <option key={w} value={w}>{w}</option>)
+                            wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)
                         ) : (
                             <option value="" disabled>No wallets found</option>
                         )}

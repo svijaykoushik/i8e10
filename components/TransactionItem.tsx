@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, Wallet } from '../types';
 
 
 interface TransactionItemProps {
@@ -9,9 +10,10 @@ interface TransactionItemProps {
   onDelete: (transaction: Transaction) => void;
   isAnimatingOut: boolean;
   isFuture: boolean;
+  wallets: Wallet[];
 }
 
-const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDelete, isAnimatingOut, isFuture }) => {
+const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDelete, isAnimatingOut, isFuture, wallets }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   
@@ -84,6 +86,8 @@ const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDele
   });
   const formattedAmount = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(transaction.amount);
 
+  const walletName = wallets.find(w => w.id === transaction.walletId)?.name || (transaction as any).wallet || 'Unknown';
+
   const Icon = () => {
     let iconPath;
     if (isDebt) {
@@ -120,10 +124,10 @@ const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDele
         <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 mt-1">
           <span>{formattedDate}</span>
           {isFuture && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300">Future</span>}
-          {transaction.wallet && (
+          {walletName && (
               <>
                   <span className="font-bold">&middot;</span>
-                  <span>{transaction.wallet}</span>
+                  <span>{walletName}</span>
               </>
           )}
         </div>

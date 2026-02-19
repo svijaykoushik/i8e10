@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { FC, FormEvent } from 'react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, Wallet } from '../types';
 import Modal from './ui/Modal';
 
 
@@ -14,7 +14,7 @@ interface TransactionFormModalProps {
   transactionToEdit?: Transaction | null;
   initialType?: TransactionType;
   initialData?: Partial<Transaction> | null;
-  wallets: string[];
+  wallets: Wallet[];
   onAlert: (title: string, message: string) => void;
 }
 
@@ -45,8 +45,8 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState(getLocalDateString());
-  const [fromWallet, setFromWallet] = useState('');
-  const [toWallet, setToWallet] = useState('');
+  const [fromWalletId, setFromWalletId] = useState('');
+  const [toWalletId, setToWalletId] = useState('');
   
   const isEditMode = !!transactionToEdit;
   const isActionDisabled = transactionToEdit?.isReconciliation || !!initialData;
@@ -59,16 +59,16 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
         setAmount(String(transactionToEdit.amount));
         setDescription(transactionToEdit.description);
         setDate(transactionToEdit.date);
-        setFromWallet(transactionToEdit.wallet || '');
+        setFromWalletId(transactionToEdit.walletId || '');
       } else {
-        const defaultWallet1 = wallets.length > 0 ? wallets[0] : '';
-        const defaultWallet2 = wallets.length > 1 ? wallets[1] : '';
+        const defaultWallet1 = wallets.length > 0 ? wallets[0].id : '';
+        const defaultWallet2 = wallets.length > 1 ? wallets[1].id : '';
         setFormMode(initialData?.type || initialType || 'expense');
         setAmount(initialData?.amount?.toString() || '');
         setDescription(initialData?.description || '');
         setDate(initialData?.date || getLocalDateString());
-        setFromWallet(initialData?.wallet || defaultWallet1);
-        setToWallet(defaultWallet2);
+        setFromWalletId(initialData?.walletId || defaultWallet1);
+        setToWalletId(defaultWallet2);
       }
     }
   }, [isOpen, transactionToEdit, initialType, initialData, isEditMode, wallets]);
@@ -86,15 +86,15 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
     if (!amount || !date || (isActionDisabled)) return;
 
     if (isTransfer) {
-        if (!fromWallet || !toWallet || fromWallet === toWallet) {
+        if (!fromWalletId || !toWalletId || fromWalletId === toWalletId) {
             onAlert("Invalid Transfer", "Please select two different wallets for the transfer.");
             return;
         }
         onSaveTransfer({
             amount: parseFloat(amount),
             date,
-            fromWallet,
-            toWallet,
+            fromWallet: fromWalletId,
+            toWallet: toWalletId,
             description,
         });
     } else {
@@ -104,7 +104,7 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
             amount: parseFloat(amount),
             description,
             date,
-            wallet: fromWallet,
+            walletId: fromWalletId,
         });
     }
     onClose();
@@ -128,7 +128,7 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
   const footer = (
     <>
       <button type="button" onClick={onClose} className="btn-press bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Cancel</button>
-      <button type="submit" form="transaction-form" disabled={(isTransfer && (!fromWallet || !toWallet || fromWallet === toWallet))} className="btn-press inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed">
+      <button type="submit" form="transaction-form" disabled={(isTransfer && (!fromWalletId || !toWalletId || fromWalletId === toWalletId))} className="btn-press inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400 disabled:cursor-not-allowed">
         {isEditMode ? 'Save Changes' : 'Save Transaction'}
       </button>
     </>
@@ -168,18 +168,18 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
                 <div>
                     <label htmlFor="fromWallet" className={labelClasses}>From Wallet / கணக்கிலிருந்து</label>
                     <div className="mt-2">
-                        <select name="fromWallet" id="fromWallet" value={fromWallet} onChange={(e) => setFromWallet(e.target.value)} className={inputBaseClasses} required disabled={isActionDisabled}>
-                            {wallets.map(w => <option key={w} value={w}>{w}</option>)}
+                        <select name="fromWallet" id="fromWallet" value={fromWalletId} onChange={(e) => setFromWalletId(e.target.value)} className={inputBaseClasses} required disabled={isActionDisabled}>
+                            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
                     </div>
                 </div>
                 <div>
                     <label htmlFor="toWallet" className={labelClasses}>To Wallet / கணக்கிற்கு</label>
                     <div className="mt-2">
-                        <select name="toWallet" id="toWallet" value={toWallet} onChange={(e) => setToWallet(e.target.value)} className={inputBaseClasses} required disabled={isActionDisabled}>
-                            {wallets.map(w => <option key={w} value={w}>{w}</option>)}
+                        <select name="toWallet" id="toWallet" value={toWalletId} onChange={(e) => setToWalletId(e.target.value)} className={inputBaseClasses} required disabled={isActionDisabled}>
+                            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
-                         {fromWallet === toWallet && fromWallet !== '' && <p className="text-xs text-red-500 mt-1">Wallets cannot be the same.</p>}
+                         {fromWalletId === toWalletId && fromWalletId !== '' && <p className="text-xs text-red-500 mt-1">Wallets cannot be the same.</p>}
                     </div>
                 </div>
             </div>
@@ -192,8 +192,8 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
                 <div>
                     <label htmlFor="wallet" className={labelClasses}>Wallet / கணக்கு</label>
                     <div className="mt-2">
-                       <select name="wallet" id="wallet" value={fromWallet} onChange={(e) => setFromWallet(e.target.value)} className={inputBaseClasses} required>
-                            {wallets.map(w => <option key={w} value={w}>{w}</option>)}
+                       <select name="wallet" id="wallet" value={fromWalletId} onChange={(e) => setFromWalletId(e.target.value)} className={inputBaseClasses} required>
+                            {wallets.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                         </select>
                     </div>
                 </div>

@@ -1,8 +1,7 @@
 
-
 import React from 'react';
 import type { FC } from 'react';
-import { Transaction } from '../types';
+import { Transaction, Wallet } from '../types';
 import TransactionItem from './TransactionItem';
 
 interface TransactionListProps {
@@ -11,9 +10,10 @@ interface TransactionListProps {
   onDelete: (transaction: Transaction) => void;
   animatingOutIds: string[];
   today: Date;
+  wallets: Wallet[];
 }
 
-const TransactionList: FC<TransactionListProps> = ({ transactions, onEdit, onDelete, animatingOutIds, today }) => {
+const TransactionList: FC<TransactionListProps> = ({ transactions, onEdit, onDelete, animatingOutIds, today, wallets }) => {
   if (transactions.length === 0 && animatingOutIds.length === 0) {
     return (
       <div className="text-center py-16 px-6 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
@@ -41,6 +41,7 @@ const TransactionList: FC<TransactionListProps> = ({ transactions, onEdit, onDel
             onDelete={onDelete}
             isAnimatingOut={animatingOutIds.includes(tx.id)}
             isFuture={new Date(tx.date + 'T00:00:00') > today}
+            wallets={wallets}
         />
       ))}
     </ul>

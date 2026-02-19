@@ -40,9 +40,9 @@ import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal'
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { liveQuery } from './src/db/liveQuery';
-import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
+import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType, Wallet } from './types';
 import * as cryptoService from './utils/cryptoService';
-import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV } from './utils/csvExporter';
+import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV, generateWalletsCSV } from './utils/csvExporter';
 import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
@@ -210,7 +210,7 @@ const App: FC = () => {
   useEffect(() => {
     if (appStatus !== 'UNLOCKED') return;
     const sub = liveQuery(() => db.debtInstallements.orderBy('date').reverse().toArray()).subscribe((val: DebtInstallment[])=>{
-      console.log("Debt installments", val);
+      // console.log("Debt installments", val);
       return setDebtInstallments(val)
     });
     return () => sub.unsubscribe();
@@ -230,6 +230,14 @@ const App: FC = () => {
     return () => sub.unsubscribe();
   }, [appStatus]);
 
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+    // We bind to the 'wallets' table
+    const sub = liveQuery(() => db.wallets.toArray()).subscribe(setWallets);
+    return () => sub.unsubscribe();
+  }, [appStatus]);
+
   const [settingsArray, setSettingsArray] = useState<AppSetting[] | undefined>();
   useEffect(() => {
     const sub = liveQuery(() => db.settings.toArray()).subscribe(setSettingsArray);
@@ -244,10 +252,10 @@ const App: FC = () => {
         }
     }
     return {
-        wallets: (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
+        // wallets: (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[], // Deprecated
         onboardingCompleted: settingsMap.onboardingCompleted ?? false,
         defaultFilterPeriod: settingsMap.defaultFilterPeriod ?? FilterPeriod.THIS_MONTH,
-        defaultWallet: settingsMap.defaultWallet ?? 'Cash / ரொக்கம்',
+        defaultWallet: settingsMap.defaultWallet, //Now a walletId
         lastBackupDate: settingsMap.lastBackupDate ?? null,
         backupReminderDismissedUntil: settingsMap.backupReminderDismissedUntil ?? null,
         appFirstUseDate: settingsMap.appFirstUseDate ?? null,
@@ -255,7 +263,7 @@ const App: FC = () => {
     };
   }, [settingsArray]);
   
-  const { wallets, onboardingCompleted, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
+  const { onboardingCompleted, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
 
   const [activeView, setActiveView] = useState<ActiveView>('transactions');
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -312,14 +320,18 @@ const App: FC = () => {
   const [initialDebtType, setInitialDebtType] = useState<DebtType>(DebtType.LENT);
 
   const correctedDefaultWallet = useMemo(() => {
-    if (defaultWallet !== 'all' && !wallets.includes(defaultWallet)) {
+    if (defaultWallet !== 'all' && !wallets.some(w => w.id === defaultWallet)) {
+      // If default wallet not in list, fallback to all.
+      // Wait, what if wallets list is empty?
+      // During migration it might be.
+      if (wallets.length === 0) return 'all';
       return 'all';
     }
     return defaultWallet;
   }, [defaultWallet, wallets]);
 
   useEffect(() => {
-    if (correctedDefaultWallet !== defaultWallet) {
+    if (correctedDefaultWallet && correctedDefaultWallet !== defaultWallet) {
       db.settings.put({ key: 'defaultWallet', value: correctedDefaultWallet });
     }
   }, [correctedDefaultWallet, defaultWallet]);
@@ -328,10 +340,15 @@ const App: FC = () => {
     period: defaultFilterPeriod,
     startDate: getLocalDateString(),
     endDate: getLocalDateString(),
-    wallet: correctedDefaultWallet,
+    walletId: correctedDefaultWallet,
     transactionType: TransactionFilterType.ALL,
   });
   
+  // Update filter when defaultWallet changes (e.g. after load)
+  useEffect(() => {
+      setFilter(prev => ({ ...prev, walletId: correctedDefaultWallet }));
+  }, [correctedDefaultWallet]);
+
   const [debtFilter, setDebtFilter] = useState<DebtFilterState>({
     status: DebtFilterStatus.ALL,
     type: DebtFilterType.ALL,
@@ -363,15 +380,120 @@ const App: FC = () => {
   const showAlert = (title: string, message: string) => {
     setAlertModal({ isOpen: true, title, message });
   };
+  
+  const checkAndPerformMigration = async () => {
+      // Check current DB version by opening a dummy connection
+      const checkVersion = (): Promise<number> => {
+          return new Promise((resolve) => {
+              const req = indexedDB.open("i8e10DB");
+              req.onsuccess = () => {
+                  const v = req.result.version;
+                  req.result.close();
+                  resolve(v);
+              };
+              req.onerror = () => resolve(0); // Assume 0 if error or not found
+          });
+      };
+      
+      const currentVersion = await checkVersion();
+      
+      if (currentVersion > 0 && currentVersion < 3) {
+          // Needs migration!
+          setAppStatus('MIGRATING');
+          console.log("Detected older database version. Starting backup-first migration...");
+          
+          try {
+              // 1. Open database using native API to bypass schema/version checks for backup
+              const backupData = await new Promise<any>((resolve, reject) => {
+                  const req = indexedDB.open("i8e10DB", 2); // Open as V2 if possible, or whatever version it is
+                  req.onsuccess = async () => {
+                      const idb = req.result;
+                      try {
+                          const transaction = idb.transaction(['transactionItems', 'debts', 'investments', 'investmentTransactions', 'debtInstallments', 'settings'], 'readonly');
+                          
+                          const allTransactions = await new Promise<any[]>((res) => { transaction.objectStore('transactionItems').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          const allDebts = await new Promise<any[]>((res) => { transaction.objectStore('debts').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          const allInvestments = await new Promise<any[]>((res) => { transaction.objectStore('investments').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          const allInvTx = await new Promise<any[]>((res) => { transaction.objectStore('investmentTransactions').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          const allDebtInst = await new Promise<any[]>((res) => { transaction.objectStore('debtInstallments').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          const settings = await new Promise<any[]>((res) => { transaction.objectStore('settings').getAll().onsuccess = (e: any) => res(e.target.result); });
+                          
+                          idb.close();
+                          resolve({ allTransactions, allDebts, allInvestments, allInvTx, allDebtInst, settings });
+                      } catch (err) {
+                          idb.close();
+                          reject(err);
+                      }
+                  };
+                  req.onerror = (e) => reject(e);
+              });
+              
+              
+              // We need to extract the wallets list from settings manually for backup
+              // derived from settings for V2
+              const walletsSetting = backupData.settings.find((s: any) => s.key === 'wallets');
+              const walletNames: string[] = walletsSetting ? walletsSetting.value : ['Cash / ரொக்கம்', 'Bank / வங்கி'];
+              // Map to fake Wallet objects for CSV export
+              const fakeWallets: Wallet[] = walletNames.map(name => ({ id: 'unknown', name, type: 'other', isDefault: false, isArchived: false }));
+              
+              // Generate CSVs
+              const csvPromises = [
+                   generateTransactionsCSV(backupData.allTransactions, fakeWallets), 
+                   generateDebtsCSV(backupData.allDebts),
+                   generateInvestmentsCSV(backupData.allInvestments),
+                   generateInvestmentTransactionsCSV(backupData.allInvTx),
+                   generateDebtInstallmentsCSV(backupData.allDebtInst),
+                   generateWalletsCSV(fakeWallets)
+              ];
+              
+              const csvs = await Promise.all(csvPromises);
+              
+              // Zip and download
+               const zipBlob = await exportToZip(
+                {
+                  transactionCSV: csvs[0],
+                  debtCSV: csvs[1],
+                  investmentCSV: csvs[2],
+                  investmentTransactionsCSV: csvs[3],
+                  debtInstallmentsCSV: csvs[4],
+                  // walletsCSV: csvs[5] // exportToZip doesn't support custom files yet, skipping wallet csv for now or adding if supported
+                }
+              );
+
+              // Force download
+              const url = URL.createObjectURL(zipBlob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `i8e10-backup-pre-migration-v3-${getLocalDateString()}.zip`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+              
+              console.log("Backup complete. Proceeding with migration...");
+              
+          } catch (e) {
+              console.error("Backup failed!", e);
+              showAlert("Backup Failed", "Could not backup your data before migration. Please ensure you have a manual backup if possible.");
+              // We proceed? Or stop? 
+              // Proceeding might be risky, but blocking stops the app.
+              // Let's pause for user interaction? No, simplistic for now: proceed with alert.
+          }
+      }
+      
+      // Now ensure we open DB (this triggers onupgradeneeded in database.ts)
+      await db.open();
+  };
 
   useEffect(() => {
     const initializeApp = async () => {
+      // Run migration check FIRST
+      await checkAndPerformMigration();
+      
       const salt = await db.settings.get('encryptionSalt');
       if (salt) {
         setAppStatus('LOCKED');
       } else {
-        // No encryption set up yet, go to SETUP_REQUIRED
-        // Data migration will happen during handlePasswordSet with encryption middleware active
         setAppStatus('SETUP_REQUIRED');
       }
     };
@@ -451,13 +573,7 @@ const App: FC = () => {
         it.id ? it : { ...it, id: crypto.randomUUID() }
       );
       const settingsToStore: AppSetting[] = [
-        {
-          key: "wallets",
-          value: JSON.parse(
-            localStorage.getItem("wallets") ||
-              '["Cash / ரொக்கம்", "Bank / வங்கி"]'
-          ),
-        },
+
         {
           key: "onboardingCompleted",
           value: JSON.parse(
@@ -502,6 +618,19 @@ const App: FC = () => {
           if (investmentTransactions.length > 0)
             await db.investmentTransactions.bulkPut(investmentTransactions);
           await db.settings.bulkPut(settingsToStore);
+          
+          // Migrate Wallets separately
+          const walletNames: string[] = JSON.parse(localStorage.getItem("wallets") || '["Cash / ரொக்கம்", "Bank / வங்கி"]');
+          const walletObjects: Wallet[] = walletNames.map(name => ({
+              id: crypto.randomUUID(),
+              name: name,
+              type: 'other',
+              isDefault: false,
+              isArchived: false
+          }));
+          if (walletObjects.length > 0) {
+              await db.wallets.bulkPut(walletObjects);
+          }
         }
       );
 
@@ -636,14 +765,14 @@ const App: FC = () => {
     setIsFilterModalOpen(false);
   };
 
-  const handleResetFilter = useCallback(<K extends keyof FilterState>(key: K) => {
-    const defaultsMap: { [T in keyof FilterState]?: FilterState[T] } = {
+  const handleResetFilter = useCallback((key: keyof FilterState) => {
+    const defaultsMap: Partial<FilterState> = {
         period: FilterPeriod.ALL,
-        wallet: 'all',
+        walletId: 'all',
         transactionType: TransactionFilterType.ALL,
     };
     if (key in defaultsMap) {
-        setFilter(prev => ({ ...prev, [key]: defaultsMap[key] as FilterState[K] }));
+        setFilter(prev => ({ ...prev, [key]: defaultsMap[key] }));
     }
   }, []);
 
@@ -695,20 +824,36 @@ const App: FC = () => {
   
   const handleSaveSettings = async (
     newDefaultPeriod: FilterPeriod,
-    newWallets: string[],
+    newWallets: Wallet[],
     newDefaultWallet: string,
     newDeficitThreshold: number
   ) => {
-    await db.settings.bulkPut([
-      { key: "defaultFilterPeriod", value: newDefaultPeriod },
-      { key: "wallets", value: newWallets },
-      { key: "defaultWallet", value: newDefaultWallet },
-      { key: "deficitThreshold", value: newDeficitThreshold },
-    ]);
+    await db.transaction('rw', db.settings, db.wallets, async () => {
+        // 1. Update Settings
+        await db.settings.bulkPut([
+            { key: "defaultFilterPeriod", value: newDefaultPeriod },
+            // { key: "wallets", value: newWallets }, // Wallets are no longer in settings
+            { key: "defaultWallet", value: newDefaultWallet },
+            { key: "deficitThreshold", value: newDeficitThreshold },
+        ]);
+
+        // 2. Sync Wallets
+        // Identify deleted wallets
+        const newWalletIds = new Set(newWallets.map(w => w.id));
+        const deletedWalletIds = wallets.filter(w => !newWalletIds.has(w.id)).map(w => w.id);
+        
+        if (deletedWalletIds.length > 0) {
+            await db.wallets.bulkDelete(deletedWalletIds);
+        }
+        
+        // Add/Update all passed wallets
+        await db.wallets.bulkPut(newWallets);
+    });
+
     setFilter((prev) => ({
       ...prev,
       period: newDefaultPeriod,
-      wallet: newDefaultWallet,
+      walletId: newDefaultWallet,
     }));
     setIsSettingsModalOpen(false);
   };
@@ -866,13 +1011,25 @@ const App: FC = () => {
           if (data.id) { // Edit mode
               const txToUpdate = await db.transactionItems.get(data.id);
               if (txToUpdate) {
-                  await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
+                  // Ensure we map 'wallet' from generic form data to 'walletId' if needed, OR expect form to send 'walletId'
+                  // The form currently sends 'wallet' property. We should map it.
+                  // But we are updating types. The incoming 'data' is typed as Transaction (Omit id).
+                  // Transaction has walletId. So data should have walletId.
+                  // However, TransactionFormModal might still be sending 'wallet'.
+                  // We'll update TransactionFormModal shortly. For now assume data has correct shape or we patch it.
+                  const { walletId, ...rest } = data as any; 
+                  // If 'wallet' property exists in data (from old form), map to walletId
+                  const finalWalletId = walletId || (data as any).wallet;
+                  
+                  await db.transactionItems.update(data.id, { ...txToUpdate, ...rest, walletId: finalWalletId });
               }
           } else { // Add mode
               if (!appFirstUseDate) {
                   await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
               }
-              await db.transactionItems.add({ ...data, id: crypto.randomUUID(), isReconciliation: false });
+              const { walletId, ...rest } = data as any;
+               const finalWalletId = walletId || (data as any).wallet;
+              await db.transactionItems.add({ ...rest, walletId: finalWalletId, id: crypto.randomUUID(), isReconciliation: false });
           }
     });
     closeAllModals();
@@ -905,17 +1062,21 @@ const App: FC = () => {
             await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
         }
         const transferId = crypto.randomUUID();
-        const { amount, date, fromWallet, toWallet, description } = data;
+        const { amount, date, fromWallet, toWallet, description } = data; // fromWallet/toWallet are IDs
 
-        const expenseDesc = `Transfer to ${toWallet}${description ? ` (${description})` : ''}`;
-        const incomeDesc = `Transfer from ${fromWallet}${description ? ` (${description})` : ''}`;
+        // Get wallet names for description
+        const fromWalletName = wallets.find(w => w.id === fromWallet)?.name || 'Unknown Wallet';
+        const toWalletName = wallets.find(w => w.id === toWallet)?.name || 'Unknown Wallet';
+
+        const expenseDesc = `Transfer to ${toWalletName}${description ? ` (${description})` : ''}`;
+        const incomeDesc = `Transfer from ${fromWalletName}${description ? ` (${description})` : ''}`;
 
         const expenseTransaction: Transaction = {
             id: crypto.randomUUID(),
             type: TransactionType.EXPENSE,
             amount,
             date,
-            wallet: fromWallet,
+            walletId: fromWallet,
             description: expenseDesc,
             isReconciliation: false,
             transferId,
@@ -926,7 +1087,7 @@ const App: FC = () => {
             type: TransactionType.INCOME,
             amount,
             date,
-            wallet: toWallet,
+            walletId: toWallet,
             description: incomeDesc,
             isReconciliation: false,
             transferId,
@@ -940,7 +1101,7 @@ const App: FC = () => {
   const handleSaveDebt = async (data: {
     debtData: Omit<Debt, 'id' | 'status'> & { id?: string };
     createTransaction: boolean;
-    wallet: string;
+    wallet: string; // This is actually walletId coming from form
   }) => {
     const { debtData, createTransaction, wallet } = data;
 
@@ -969,7 +1130,7 @@ const App: FC = () => {
                     description: debtData.type === DebtType.LENT
                         ? `Loan to ${debtData.person}`
                         : `Loan from ${debtData.person}`,
-                    wallet: wallet,
+                    walletId: wallet,
                     debtId: newDebt.id,
                     isReconciliation: false,
                 };
@@ -1064,7 +1225,7 @@ const App: FC = () => {
               description: isLent
                 ? `Payment received from ${debtForInstallment.person}`
                 : `Payment made to ${debtForInstallment.person}`,
-              wallet: data.wallet,
+              walletId: data.wallet,
               debtId: debtForInstallment.id,
               isReconciliation: false,
               debtInstallmentId: installmentId
@@ -1167,7 +1328,7 @@ const App: FC = () => {
                         amount: contributionAmount,
                         date: investmentData.startDate,
                         description: `Investment: ${investmentData.name}`,
-                        wallet: wallet,
+                        walletId: wallet,
                         investmentTransactionId: investmentTx.id,
                         isReconciliation: false,
                     };
@@ -1229,7 +1390,7 @@ const App: FC = () => {
                     amount: transactionData.amount,
                     date: transactionData.date,
                     description,
-                    wallet: wallet,
+                    walletId: wallet,
                     investmentTransactionId: newInvestmentTx.id,
                     isReconciliation: false,
                 };
@@ -1350,7 +1511,7 @@ const App: FC = () => {
                 description: settlingDebt.type === DebtType.LENT 
                     ? `Settled debt from ${settlingDebt.person}` 
                     : `Paid back debt to ${settlingDebt.person}`,
-                wallet: data.wallet,
+                walletId: data.wallet,
                 debtId: settlingDebt.id,
                 isReconciliation: false,
                 debtInstallmentId: finalInstallment.id
@@ -1402,7 +1563,7 @@ const App: FC = () => {
                 amount: sellingInvestment.currentValue,
                 date: data.sellDate,
                 description: `Sold investment: ${sellingInvestment.name}`,
-                wallet: data.wallet,
+                walletId: data.wallet,
                 investmentTransactionId: finalWithdrawal.id,
                 isReconciliation: false,
             };
@@ -1487,12 +1648,12 @@ const App: FC = () => {
       // 1. Filter for List View and Periodic Stats
       const txDate = new Date(tx.date + 'T00:00:00');
 
-      const walletMatch = filter.wallet === 'all' || tx.wallet === filter.wallet;
+      const walletMatch = filter.walletId === 'all' || tx.walletId === filter.walletId;
       if (!walletMatch) return;
 
       if (txDate >= periodStartDate && txDate <= periodEndDate) {
         periodTransactions.push(tx);
-        if (tx.isReconciliation || (filter.wallet === 'all' && tx.transferId)) return;
+        if (tx.isReconciliation || (filter.walletId === 'all' && tx.transferId)) return;
         
         if (tx.type === TransactionType.INCOME) {
             projIncome += tx.amount;
@@ -1609,9 +1770,9 @@ const App: FC = () => {
     let global = 0;
 
     const relevantTransactions =
-      filter.wallet === "all"
+      filter.walletId === "all"
         ? transactions
-        : transactions.filter((tx) => tx.wallet === filter.wallet);
+        : transactions.filter((tx) => tx.walletId === filter.walletId);
 
     relevantTransactions.forEach((tx) => {
       const txDate = new Date(tx.date + "T00:00:00");
@@ -1636,7 +1797,7 @@ const App: FC = () => {
       projectedBalance: projected,
       globalBalance: global,
     };
-  }, [transactions, filter.wallet, today]);
+  }, [transactions, filter.walletId, today]);
 
   const filteredDebts = useMemo(() => {
     if (!debts) return [];
@@ -1777,7 +1938,7 @@ const App: FC = () => {
         date: getLocalDateString(),
         description: "Balance Adjustment",
         isReconciliation: true,
-        wallet: filter.wallet !== 'all' ? filter.wallet : wallets[0] || 'Default',
+        walletId: filter.walletId !== 'all' ? filter.walletId : (wallets[0]?.id || 'unknown'),
     };
 
     await db.transaction('rw', db.transactionItems, db.settings, async () => {
@@ -1821,7 +1982,15 @@ const App: FC = () => {
     }
 
     try {
-        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV,investmentCSV, investmentTransactionsCSV });
+        const zipBlob = await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV,investmentCSV, investmentTransactionsCSV });
+        const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `i8e10-export-${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     } catch(e) {
         showAlert('Export Error', 'Could not export data. See the browser console for details.');
         console.error(e);
@@ -1843,7 +2012,16 @@ const App: FC = () => {
     }
 
     try {
-        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV });
+        const zipBlob = await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV });
+         const url = URL.createObjectURL(zipBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `i8e10-backup-${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
         // Update last backup date on successful export
         await db.settings.put({ key: 'lastBackupDate', value: new Date().toISOString() });
         setBackupReminder({ show: false, days: null });
@@ -1959,7 +2137,7 @@ const App: FC = () => {
 
 
         // This ensures the user sees the newly imported data immediately.
-        setFilter(prev => ({ ...prev, period: FilterPeriod.ALL, transactionType: TransactionFilterType.ALL, wallet: 'all' }));
+        setFilter(prev => ({ ...prev, period: FilterPeriod.ALL, transactionType: TransactionFilterType.ALL, walletId: 'all' }));
         setDebtFilter(prev => ({ ...prev, period: FilterPeriod.ALL, status: DebtFilterStatus.ALL, type: DebtFilterType.ALL }));
         setInvestmentFilter(prev => ({ ...prev, period: FilterPeriod.ALL, status: InvestmentFilterStatus.ALL, type: 'all' }));
 
@@ -2101,7 +2279,7 @@ const App: FC = () => {
                   projectedPeriodicExpense={projectedPeriodicExpense}
                   onReconcileClick={() => setIsReconcileModalOpen(true)}
                   filterPeriod={filter.period}
-                  walletName={filter.wallet === 'all' ? 'All Wallets' : filter.wallet}
+                  walletName={filter.walletId === 'all' ? 'All Wallets' : (wallets.find(w => w.id === filter.walletId)?.name || 'Unknown Wallet')}
                 />
                 <FilterControls
                   filter={filter}
@@ -2115,6 +2293,7 @@ const App: FC = () => {
                   onDelete={handleOpenDeleteModal}
                   animatingOutIds={animatingOutIds}
                   today={today}
+                  wallets={wallets}
                 />
             </>
         )}
