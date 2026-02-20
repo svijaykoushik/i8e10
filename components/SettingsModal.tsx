@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { FC } from 'react';
-import { FilterPeriod, Wallet } from '../types';
+import { FilterPeriod, Transaction, Wallet } from '../types';
 import Modal from './ui/Modal';
 import useTheme from '../hooks/useTheme';
 
@@ -11,6 +11,7 @@ interface SettingsModalProps {
   currentDefault: FilterPeriod;
   currentDefaultWallet: string;
   wallets: Wallet[];
+  transactions: Transaction[];
   currentDeficitThreshold: number;
   onSave: (
     newDefault: FilterPeriod,
@@ -32,6 +33,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   currentDefault,
   currentDefaultWallet,
   wallets,
+  transactions,
   currentDeficitThreshold,
   onSave,
   onShowOnboarding,
@@ -95,6 +97,13 @@ const SettingsModal: FC<SettingsModalProps> = ({
   };
 
   const handleDeleteWallet = (walletId: string) => {
+    // Check for dependencies
+    const hasDependencies = transactions.some(t => t.walletId === walletId);
+    if (hasDependencies) {
+        onAlert("Action Not Allowed", "Cannot delete this wallet because it has associated transactions. Please delete or reassign them first.");
+        return;
+    }
+
     if (editableWallets.length > 1) {
         setEditableWallets(editableWallets.filter(w => w.id !== walletId));
         if (selectedWallet === walletId) {
