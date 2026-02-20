@@ -71,6 +71,7 @@ export interface Table<T, TKey = string> {
   bulkPut(items: T[]): Promise<string[]>;
   bulkDelete(keys: string[]): Promise<void>;
   update(id: TKey, changes: Partial<T>): Promise<void>;
+  count(): Promise<number>;
 }
 
 export interface AppSetting {

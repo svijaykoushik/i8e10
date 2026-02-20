@@ -101,6 +101,16 @@ class TableProxy<T extends Model> {
     }
   }
 
+  async count() {
+    try {
+      const t = await this.core();
+      return await t.count();
+    } catch (error) {
+      console.error(`Failed to count items in table '${this.name}':`, error);
+      return 0;
+    }
+  }
+
   async clear() {
     try {
       const t = await this.core();

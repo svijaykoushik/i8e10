@@ -85,4 +85,8 @@ export class CustomTable<T, TKey = string> implements Table<T, TKey> {
     if (!existing) return;
     await this.put({ ...existing, ...changes } as T);
   }
+
+  async count(): Promise<number> {
+    return this.toCollection().count();
+  }
 }

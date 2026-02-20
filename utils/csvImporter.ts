@@ -1,5 +1,5 @@
 
-import { Transaction, TransactionType, Debt, DebtType, DebtStatus, Investment, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, DebtInstallment } from '../types';
+import { Transaction, TransactionType, Debt, DebtType, DebtStatus, Investment, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, DebtInstallment, Wallet } from '../types';
 
 export interface ParseError {
     originalRow: string[];
@@ -53,32 +53,35 @@ export const parseTransactionsCSV = (csvString: string): ParseResult<Transaction
     data.slice(1).forEach(row => {
         try {
             let id: string;
-            let typeStr: string, date: string, amountStr: string, description: string, wallet: string, isReconStr: string;
+            let typeStr: string, date: string, amountStr: string, description: string, wallet: string, walletId: string | undefined, isReconStr: string;
             
-            // Handle both old (6 columns) and new (7 columns with ID) formats
-            if (row.length === 7) {
+            // Handle old (6 columns) and new (7 or 8 columns with ID/WalletID) formats
+            if (row.length === 8) {
+                [id, typeStr, date, amountStr, description, wallet, walletId, isReconStr] = row; 
+            } else if (row.length === 7) {
                 [id, typeStr, date, amountStr, description, wallet, isReconStr] = row;
             } else if (row.length === 6) {
                 [typeStr, date, amountStr, description, wallet, isReconStr] = row;
                 id = crypto.randomUUID(); // Generate new ID for old format
             } else {
-                throw new Error(`Incorrect number of columns. Expected 6 or 7, but got ${row.length}.`);
+                throw new Error(`Incorrect number of columns. Expected 6, 7 or 8, but got ${row.length}.`);
             }
             
-            const transaction: Transaction = {
+            const transaction: any = {
                 id,
                 type: typeStr.includes('Income') ? TransactionType.INCOME : TransactionType.EXPENSE,
                 date: date,
                 amount: parseFloat(amountStr),
                 description: description || '',
                 wallet: wallet || undefined,
+                walletId: walletId || undefined,
                 isReconciliation: isReconStr === 'Yes',
             };
             if (!id) throw new Error("Missing ID in row.");
             if (isNaN(transaction.amount)) throw new Error(`Invalid amount: "${amountStr}"`);
             if (!/^\d{4}-\d{2}-\d{2}$/.test(transaction.date)) throw new Error(`Invalid date format: "${date}"`);
             
-            result.successful.push(transaction);
+            result.successful.push(transaction as Transaction);
         } catch (e: any) {
             result.errors.push({ originalRow: row, message: e.message || 'Malformed row' });
         }
@@ -250,6 +253,41 @@ export const parseInvestmentTransactionsCSV = (csvString: string): ParseResult<I
             if (!Object.values(InvestmentTransactionType).includes(tx.type)) throw new Error(`Invalid transaction type: "${typeStr}"`);
 
             result.successful.push(tx);
+        } catch(e: any) {
+            result.errors.push({ originalRow: row, message: e.message || 'Malformed row' });
+        }
+    });
+    return result;
+};
+
+export const parseWalletsCSV = (csvString: string): ParseResult<Wallet> => {
+    const data = parseCSV(csvString);
+    if (data.length < 2) return { successful: [], errors: [] };
+
+    const result: ParseResult<Wallet> = { successful: [], errors: [] };
+    
+    data.slice(1).forEach(row => {
+        try {
+            let id: string;
+            let name: string, type: string, isDefaultStr: string, isArchivedStr: string;
+
+            if (row.length === 5) {
+                [id, name, type, isDefaultStr, isArchivedStr] = row;
+            } else {
+                throw new Error(`Incorrect number of columns. Expected 5, but got ${row.length}.`);
+            }
+            
+            const wallet: Wallet = {
+                id,
+                name,
+                type: type as any,
+                isDefault: isDefaultStr === 'Yes',
+                isArchived: isArchivedStr === 'Yes'
+            };
+
+            if (!id) throw new Error("Missing ID in row.");
+            
+            result.successful.push(wallet);
         } catch(e: any) {
             result.errors.push({ originalRow: row, message: e.message || 'Malformed row' });
         }

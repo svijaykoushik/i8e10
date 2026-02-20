@@ -43,7 +43,7 @@ import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType, Wallet } from './types';
 import * as cryptoService from './utils/cryptoService';
 import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV, generateWalletsCSV } from './utils/csvExporter';
-import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV } from './utils/csvImporter';
+import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseWalletsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
 
@@ -161,6 +161,7 @@ type ImportResultSummary = {
     debtInst: { added: number; updated: number }
     inv: { added: number; updated: number };
     invTx: { added: number; updated: number };
+    wallet?: { added: number; updated: number };
 };
 
 const getLocalDateString = () => {
@@ -672,7 +673,7 @@ const App: FC = () => {
         }
         
         // Fix: Pass tables as an array to db.transaction
-        await db.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings], async () => {
+        await db.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
             // Re-write all items to trigger encryption middleware.
             const tablesToReEncrypt = [db.transactionItems, db.debts, db.investments, db.investmentTransactions];
             for (const rawTable of tablesToReEncrypt) {
@@ -692,6 +693,15 @@ const App: FC = () => {
                         await table.bulkPut(items as any);
                     }
                 }
+            }
+            
+            // Ensure default wallets exist if table is empty (Fresh Install / Wipe)
+            const walletCount = await db.wallets.count();
+            if (walletCount === 0) {
+                 await db.wallets.bulkAdd([
+                    { id: crypto.randomUUID(), name: 'Cash / ரொக்கம்', type: 'cash', isDefault: true, isArchived: false },
+                    { id: crypto.randomUUID(), name: 'Bank / வங்கி', type: 'bank', isDefault: false, isArchived: false }
+                 ]);
             }
             
             await db.settings.bulkPut([
@@ -2003,8 +2013,9 @@ const App: FC = () => {
     const debtInstallmentsCSV = generateDebtInstallmentsCSV(debtInstallments || []);
     const investmentCSV = generateInvestmentsCSV(investments || []);
     const investmentTransactionsCSV = generateInvestmentTransactionsCSV(investmentTransactions || []);
+    const walletsCSV = generateWalletsCSV(wallets || []);
     
-    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV;
+    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV || walletsCSV;
 
     if (!hasData) {
         showAlert('No Data to Export', 'There is no data to export.');
@@ -2012,8 +2023,8 @@ const App: FC = () => {
     }
 
     try {
-        const zipBlob = await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV });
-         const url = URL.createObjectURL(zipBlob);
+        const zipBlob = await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV, walletsCSV });
+        const url = URL.createObjectURL(zipBlob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `i8e10-backup-${new Date().toISOString().split('T')[0]}.zip`;
@@ -2042,8 +2053,9 @@ const App: FC = () => {
         const { successful: importedDebtInstallments, errors: debtInstallmentErrors } = files['debtInstallments.csv'] ? parseDebtInstallmentsCSV(files['debtInstallments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestments, errors: invErrors } = files['investments.csv'] ? parseInvestmentsCSV(files['investments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestmentTxs, errors: invTxErrors } = files['investment_transactions.csv'] ? parseInvestmentTransactionsCSV(files['investment_transactions.csv']) : { successful: [], errors: [] };
+        const { successful: importedWallets, errors: walletErrors } = files['wallets.csv'] ? parseWalletsCSV(files['wallets.csv']) : { successful: [], errors: [] };
 
-        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors];
+        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors, ...walletErrors];
 
         // Data integrity check: Ensure investment transactions have a valid parent.
         const existingInvestmentIds = new Set((await db.investments.toArray()).map(i => i.id));
@@ -2067,14 +2079,107 @@ const App: FC = () => {
         const allErrors = [...allParseErrors, ...orphanedInvestmentTxErrors];
 
         // Fix: Pass tables as an array to db.transaction and add type to summary
-        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings], async () => {
+        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
             const resultSummary: ImportResultSummary = {
                 tx: { added: 0, updated: 0 },
                 debt: { added: 0, updated: 0 },
                 debtInst: {added: 0, updated: 0 },
                 inv: { added: 0, updated: 0 },
-                invTx: { added: 0, updated: 0 }
+                invTx: { added: 0, updated: 0 },
+                wallet: { added: 0, updated: 0 }
             };
+
+            // Process Wallets
+            const importDateSuffix = `(IMP${getLocalDateString().replace(/-/g, '')})`; // e.g., (IMP20231027)
+            const allCurrentWallets = await db.wallets.toArray();
+            const currentWalletNameMap = new Map(allCurrentWallets.map(w => [w.name.toLowerCase(), w.id]));
+            const existingWalletIds = new Set(allCurrentWallets.map(w => w.id));
+
+            if (importedWallets.length > 0) {
+                importedWallets.forEach(w => {
+                    if (existingWalletIds.has(w.id)) {
+                        // ID exists: Update (overwrite)
+                        resultSummary.wallet!.updated++;
+                    } else {
+                        // ID does not exist: Add as new.
+                        // Check for name collision with DIFFERENT ID.
+                        const lowerName = w.name.toLowerCase();
+                        if (currentWalletNameMap.has(lowerName)) {
+                            // Name collision! Rename.
+                            w.name = `${w.name} ${importDateSuffix}`;
+                        }
+                        resultSummary.wallet!.added++;
+                    }
+                });
+                await db.wallets.bulkPut(importedWallets);
+                
+                // Update local maps for any inferred logic (though we mostly rely on importedWallets now)
+                importedWallets.forEach(w => {
+                    existingWalletIds.add(w.id);
+                    currentWalletNameMap.set(w.name.toLowerCase(), w.id);
+                });
+            } else {
+                 // RECOVERY LOGIC: Attempt to recover wallets from transaction data if wallets.csv is missing
+                 const inferredWallets = new Map<string, Wallet>();
+                 
+                 importedTransactions.forEach(tx => {
+                     const txAny = tx as any;
+                     const walletName = txAny.wallet;
+                     
+                     // 1. If has valid walletId, use it.
+                     if (tx.walletId && existingWalletIds.has(tx.walletId)) {
+                         // ID match, all good.
+                     } 
+                     // 2. If has walletId but not in DB, AND has name: Create it.
+                     else if (tx.walletId && !existingWalletIds.has(tx.walletId) && walletName) {
+                         if (!inferredWallets.has(tx.walletId)) {
+                             let newName = walletName;
+                             const lowerName = walletName.toLowerCase();
+                             if (currentWalletNameMap.has(lowerName)) {
+                                 // Name collision with existing wallet (different ID implied since we checked ID existence)! Rename.
+                                 newName = `${walletName} ${importDateSuffix}`;
+                             }
+
+                            inferredWallets.set(tx.walletId, {
+                                id: tx.walletId,
+                                name: newName,
+                                type: 'other',
+                                isDefault: false,
+                                isArchived: false
+                            });
+                            existingWalletIds.add(tx.walletId);
+                            // Add to map to prevent double renaming if multiple txs reference same new wallet
+                            currentWalletNameMap.set(newName.toLowerCase(), tx.walletId); 
+                        }
+                    }
+                    // 3. No valid walletId, but has Name. (Legacy export)
+                    else if ((!tx.walletId || !existingWalletIds.has(tx.walletId)) && walletName) {
+                        const lowerName = walletName.toLowerCase();
+                        if (currentWalletNameMap.has(lowerName)) {
+                            tx.walletId = currentWalletNameMap.get(lowerName)!;
+                        } else {
+                            // Create new wallet
+                            const newId = crypto.randomUUID();
+                            const newWallet: Wallet = {
+                                id: newId,
+                                name: walletName, // No renaming needed here because we checked map and it wasn't there
+                                type: 'other',
+                                isDefault: false,
+                                isArchived: false
+                            };
+                            inferredWallets.set(newId, newWallet);
+                            currentWalletNameMap.set(lowerName, newId);
+                            existingWalletIds.add(newId);
+                            tx.walletId = newId;
+                        }
+                    }
+                 });
+                 
+                 if (inferredWallets.size > 0) {
+                     await db.wallets.bulkAdd(Array.from(inferredWallets.values()));
+                     resultSummary.wallet!.added += inferredWallets.size;
+                 }
+            }
 
             // Process Investments
             if (importedInvestments.length > 0) {
