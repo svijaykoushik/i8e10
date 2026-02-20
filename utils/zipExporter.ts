@@ -34,6 +34,7 @@ interface ExportData {
     debtInstallmentsCSV?: string;
     investmentCSV?: string;
     investmentTransactionsCSV?: string;
+    walletsCSV?: string;
 }
 
 export const exportToZip = async (data: ExportData): Promise<Blob> => {
@@ -55,6 +56,9 @@ export const exportToZip = async (data: ExportData): Promise<Blob> => {
         }
         if(data.investmentTransactionsCSV) {
             zip.file("investment_transactions.csv", data.investmentTransactionsCSV);
+        }
+        if(data.walletsCSV) {
+            zip.file("wallets.csv", data.walletsCSV);
         }
 
         const content = await zip.generateAsync({ type: "blob" });
