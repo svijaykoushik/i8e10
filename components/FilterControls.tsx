@@ -1,10 +1,11 @@
 
 import React from 'react';
 import type { FC } from 'react';
-import { FilterPeriod, FilterState, TransactionFilterType } from '../types';
+import { FilterPeriod, FilterState, TransactionFilterType, Wallet } from '../types';
 
 interface FilterControlsProps {
   filter: FilterState;
+  wallets: Wallet[];
   onOpenModal: () => void;
   onResetFilter: <K extends keyof FilterState>(key: K) => void;
   defaultPeriod: FilterPeriod;
@@ -40,15 +41,17 @@ const getTypeLabel = (type: TransactionFilterType): string => {
     }
 }
 
-const FilterControls: FC<FilterControlsProps> = ({ filter, onOpenModal, onResetFilter }) => {
+const FilterControls: FC<FilterControlsProps> = ({ filter, wallets, onOpenModal, onResetFilter }) => {
+  const walletName = wallets.find(w => w.id === filter.walletId)?.name || 'Unknown Wallet';
+
   return (
     <div className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm mb-6 flex items-center justify-between gap-4">
       <div className="flex flex-wrap items-center gap-2 flex-grow">
         {filter.period !== FilterPeriod.ALL && getPeriodLabel(filter.period) && (
             <FilterPill label={getPeriodLabel(filter.period)} onDismiss={() => onResetFilter('period')} />
         )}
-        {filter.wallet !== 'all' && (
-             <FilterPill label={filter.wallet} onDismiss={() => onResetFilter('wallet')} />
+        {filter.walletId !== 'all' && (
+             <FilterPill label={walletName} onDismiss={() => onResetFilter('walletId')} />
         )}
         {filter.transactionType !== TransactionFilterType.ALL && getTypeLabel(filter.transactionType) && (
              <FilterPill label={getTypeLabel(filter.transactionType)} onDismiss={() => onResetFilter('transactionType')} />

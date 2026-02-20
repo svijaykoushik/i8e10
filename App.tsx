@@ -2388,6 +2388,7 @@ const App: FC = () => {
                 />
                 <FilterControls
                   filter={filter}
+                  wallets={wallets}
                   onOpenModal={() => setIsFilterModalOpen(true)}
                   onResetFilter={handleResetFilter}
                   defaultPeriod={defaultFilterPeriod}
@@ -2579,6 +2580,7 @@ const App: FC = () => {
         currentDefaultWallet={correctedDefaultWallet}
         currentDeficitThreshold={deficitThreshold}
         wallets={wallets}
+        transactions={transactions || []}
         onSave={handleSaveSettings}
         onShowOnboarding={handleShowOnboarding}
         onOpenBulkAdd={() => { setIsSettingsModalOpen(false); setIsBulkAddModalOpen(true); }}
