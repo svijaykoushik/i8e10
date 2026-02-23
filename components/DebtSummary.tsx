@@ -59,7 +59,7 @@ const DebtSummary: FC<DebtSummaryProps> = ({ totalLent, totalOwed }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       {/* Net Debt Position Card - HERO */}
-      <div className="bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 p-6 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+      <div className="bg-gradient-to-br from-white to-slate-100 dark:from-slate-800 dark:to-slate-900 p-6 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
         <div>
           <h3 className="text-lg font-semibold text-slate-600 dark:text-slate-300">Net Debt Position / நிகர கடன் நிலை</h3>
           <AnimatedNumber 
