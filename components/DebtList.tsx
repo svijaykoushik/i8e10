@@ -68,7 +68,7 @@ const DebtList: FC<DebtListProps> = ({ debts, onEdit, onSettle, onForgive, onDel
     return (
         <>
             <h3 className="px-1 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{title}</h3>
-            <ul className="space-y-2">
+            <ul className="space-y-2 pb-32">
             {items.map(d => {
               const installments = installmentsByDebtId.get(d.id)
               return(

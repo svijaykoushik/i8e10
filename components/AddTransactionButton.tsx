@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { FC } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ActionType, ActiveView } from '../types';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 
 
 interface AddTransactionButtonProps {
@@ -15,6 +17,16 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
   // This ref acts as a lock to prevent both a tap and a long-press action
   // from firing during the same user interaction.
   const actionTriggered = useRef(false);
+  
+  // Scroll detection for FAB auto-hide behavior
+  const { isVisible } = useScrollDirection(10);
+
+  // Close menu when FAB hides (scrolling down)
+  useEffect(() => {
+    if (!isVisible && isOpen) {
+      setIsOpen(false);
+    }
+  }, [isVisible, isOpen]);
 
   const handleSelect = async (type: ActionType) => {
     try {
@@ -70,10 +82,41 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
     }
   };
 
+  // Framer Motion variants for FAB visibility animations
+  const fabVariants = {
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        type: 'spring' as const,
+        stiffness: 100,
+        damping: 12,
+        mass: 1,
+      },
+    },
+    hidden: {
+      opacity: 0,
+      y: 120,
+      scale: 0.9,
+      transition: {
+        duration: 0.4,
+      },
+    },
+  };
+
   return (
-    <div className={`fixed bottom-6 right-6 z-30 ${!isOpen ? 'pointer-events-none' : ''}`}>
-      {/* This container now handles pointer events to prevent blocking clicks when closed */}
-      <div className={`relative flex flex-col items-end ${!isOpen ? 'pointer-events-none' : ''}`}>
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          exit="hidden"
+          variants={fabVariants}
+          className={`fixed bottom-6 right-6 z-30 ${!isOpen ? 'pointer-events-none' : ''}`}
+        >
+          {/* This container now handles pointer events to prevent blocking clicks when closed */}
+          <div className={`relative flex flex-col items-end ${!isOpen ? 'pointer-events-none' : ''}`}>
         {/* Action Buttons Container */}
         <div 
           className={`flex flex-col items-end mb-4 space-y-3 transition-opacity duration-300 ${!isOpen ? 'opacity-0' : 'opacity-100'}`}
@@ -127,7 +170,9 @@ const AddTransactionButton: FC<AddTransactionButtonProps> = ({ onQuickAdd, onSel
           </svg>
         </button>
       </div>
-    </div>
+      </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

@@ -89,7 +89,7 @@ const InvestmentList: FC<InvestmentListProps> = ({
     return (
         <>
             <h3 className="px-1 py-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{title}</h3>
-            <ul className="space-y-3">
+            <ul className="space-y-3 pb-32">
             {items.map(inv => {
                 const transactionsForInvestment = transactionsByInvestmentId.get(inv.id) || [];
                 return (

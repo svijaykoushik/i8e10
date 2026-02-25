@@ -1,7 +1,7 @@
 {
   "name": "i8e10",
   "license": "AGPL-3.0-only",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
     "dexie": "^4.0.7",
+    "framer-motion": "^12.34.3",
     "puppeteer": "^24.37.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
