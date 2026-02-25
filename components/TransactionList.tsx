@@ -32,7 +32,7 @@ const TransactionList: FC<TransactionListProps> = ({ transactions, onEdit, onDel
   }
 
   return (
-    <ul className="space-y-2">
+    <ul className="space-y-2 pb-32">
       {transactions.map(tx => (
         <TransactionItem 
             key={tx.id} 
