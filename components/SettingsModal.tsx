@@ -49,6 +49,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
   const { theme, toggleTheme } = useTheme();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // version injected by Vite via process.env.APP_VERSION in vite.config.ts
+  const appVersion = process.env.APP_VERSION || "0.0.0";
+
   useEffect(() => {
     if (isOpen) {
       setSelectedPeriod(currentDefault);
@@ -318,6 +321,21 @@ const SettingsModal: FC<SettingsModalProps> = ({
              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
                 Permanently delete all data from this device.
             </p>
+        </div>
+        {/* version/link info at bottom */}
+        <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 flex justify-center items-center gap-1">
+          Version {appVersion} •{' '}
+          <a
+            href="https://github.com/svijaykoushik/i8e10"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-indigo-600 flex items-center gap-1"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0a12 12 0 00-3.793 23.399c.6.111.82-.26.82-.577 0-.285-.011-1.04-.017-2.042-3.338.725-4.042-1.61-4.042-1.61-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.73.083-.73 1.204.085 1.838 1.237 1.838 1.237 1.07 1.834 2.809 1.304 3.495.997.108-.775.419-1.304.762-1.604-2.665-.304-5.467-1.332-5.467-5.931 0-1.31.469-2.381 1.236-3.221-.124-.303-.536-1.523.117-3.176 0 0 1.008-.323 3.301 1.23a11.52 11.52 0 013.003-.404c1.02.005 2.045.138 3.003.404 2.291-1.553 3.297-1.23 3.297-1.23.655 1.653.243 2.873.119 3.176.77.84 1.235 1.911 1.235 3.221 0 4.61-2.807 5.624-5.479 5.921.43.371.814 1.102.814 2.222 0 1.605-.015 2.899-.015 3.293 0 .32.216.694.825.576A12.005 12.005 0 0012 0z" />
+            </svg>
+            GitHub
+          </a>
         </div>
 
       </div>

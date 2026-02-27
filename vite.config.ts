@@ -4,6 +4,9 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import tailwindcss from '@tailwindcss/vite'
 
+// grab version from package.json so we can inject it into the build
+import { version } from "./package.json";
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   return {
@@ -14,6 +17,8 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env.API_KEY": JSON.stringify(env.GEMINI_API_KEY),
       "process.env.GEMINI_API_KEY": JSON.stringify(env.GEMINI_API_KEY),
+      // expose the current application version so it can be shown in the UI
+      "process.env.APP_VERSION": JSON.stringify(version),
     },
     resolve: {
       alias: {
