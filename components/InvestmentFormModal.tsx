@@ -137,18 +137,10 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
             <input type="text" id="inv-name" value={name} onChange={(e) => setName(e.target.value)} className={inputBaseClasses} placeholder="e.g., Reliance Mutual Fund" required autoFocus/>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="inv-type" className={labelClasses}>Type / வகை</label>
-                <div className="mt-2">
-                    <input type="text" id="inv-type" value={type} onChange={(e) => setType(e.target.value)} className={inputBaseClasses} placeholder="e.g., Stock, Real Estate" required />
-                </div>
-            </div>
-            <div>
-                <label htmlFor="inv-date" className={labelClasses}>Start Date / தொடங்கிய தேதி</label>
-                <div className="mt-2">
-                    <input type="date" id="inv-date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputBaseClasses} required />
-                </div>
+        <div>
+            <label htmlFor="inv-type" className={labelClasses}>Type / வகை</label>
+            <div className="mt-2">
+                <input type="text" id="inv-type" value={type} onChange={(e) => setType(e.target.value)} className={inputBaseClasses} placeholder="e.g., Stock, Real Estate" required />
             </div>
         </div>
         
@@ -211,6 +203,12 @@ const InvestmentFormModal: FC<InvestmentFormModalProps> = ({
           <div className="mt-2">
             <textarea id="inv-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={inputBaseClasses} placeholder="e.g., Folio number, details..."/>
           </div>
+        </div>
+        <div>
+            <label htmlFor="inv-date" className={labelClasses}>Start Date / தொடங்கிய தேதி</label>
+            <div className="mt-2">
+                <input type="date" id="inv-date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className={inputBaseClasses} required />
+            </div>
         </div>
       </form>
     </Modal>

@@ -40,7 +40,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
   const [date, setDate] = useState(getLocalDateString());
   const [createTransaction, setCreateTransaction] = useState(false);
   const [walletId, setWalletId] = useState('');
-  const personInputRef = useRef<HTMLInputElement>(null);
+  const amountInputRef = useRef<HTMLInputElement>(null);
   
   const isEditMode = !!debtToEdit;
 
@@ -61,7 +61,7 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
         setCreateTransaction(false);
         setWalletId(wallets.length > 0 ? wallets[0].id : '');
       }
-      setTimeout(() => personInputRef.current?.focus(), 50);
+      setTimeout(() => amountInputRef.current?.focus(), 50);
     }
   }, [isOpen, debtToEdit, initialType, isEditMode, wallets]);
   
@@ -132,30 +132,30 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
           </div>
         </div>
         <div>
-          <label htmlFor="person" className={labelClasses}>Person / நபர்</label>
-          <div className="mt-2">
-            <input ref={personInputRef} type="text" name="person" id="person" value={person} onChange={(e) => setPerson(e.target.value)} className={inputBaseClasses} placeholder="e.g., John Doe" required />
-          </div>
-        </div>
-        <div>
           <label htmlFor="amount" className={labelClasses}>Amount / தொகை</label>
           <div className="relative mt-2 rounded-md shadow-sm">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
               <span className="text-slate-500 sm:text-sm">₹</span>
             </div>
-            <input type="number" name="amount" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputBaseClasses} pl-7`} placeholder="0.00" required />
+            <input ref={amountInputRef} type="number" name="amount" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputBaseClasses} pl-7`} placeholder="0.00" required />
           </div>
         </div>
         <div>
-          <label htmlFor="date" className={labelClasses}>Date / தேதி</label>
+          <label htmlFor="person" className={labelClasses}>Person / நபர்</label>
           <div className="mt-2">
-            <input type="date" name="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
+            <input type="text" name="person" id="person" value={person} onChange={(e) => setPerson(e.target.value)} className={inputBaseClasses} placeholder="e.g., John Doe" required />
           </div>
         </div>
         <div>
           <label htmlFor="description" className={labelClasses}>Description (Optional) / விளக்கம் (விரும்பினால்)</label>
           <div className="mt-2">
             <input type="text" name="description" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className={inputBaseClasses} placeholder="e.g., For lunch" />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="date" className={labelClasses}>Date / தேதி</label>
+          <div className="mt-2">
+            <input type="date" name="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
           </div>
         </div>
         
