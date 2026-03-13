@@ -132,12 +132,6 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
           </div>
         </div>
         <div>
-          <label htmlFor="person" className={labelClasses}>Person / நபர்</label>
-          <div className="mt-2">
-            <input ref={personInputRef} type="text" name="person" id="person" value={person} onChange={(e) => setPerson(e.target.value)} className={inputBaseClasses} placeholder="e.g., John Doe" required />
-          </div>
-        </div>
-        <div>
           <label htmlFor="amount" className={labelClasses}>Amount / தொகை</label>
           <div className="relative mt-2 rounded-md shadow-sm">
             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
@@ -147,15 +141,21 @@ const DebtFormModal: FC<DebtFormModalProps> = ({
           </div>
         </div>
         <div>
-          <label htmlFor="date" className={labelClasses}>Date / தேதி</label>
+          <label htmlFor="person" className={labelClasses}>Person / நபர்</label>
           <div className="mt-2">
-            <input type="date" name="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
+            <input ref={personInputRef} type="text" name="person" id="person" value={person} onChange={(e) => setPerson(e.target.value)} className={inputBaseClasses} placeholder="e.g., John Doe" required />
           </div>
         </div>
         <div>
           <label htmlFor="description" className={labelClasses}>Description (Optional) / விளக்கம் (விரும்பினால்)</label>
           <div className="mt-2">
             <input type="text" name="description" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className={inputBaseClasses} placeholder="e.g., For lunch" />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="date" className={labelClasses}>Date / தேதி</label>
+          <div className="mt-2">
+            <input type="date" name="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
           </div>
         </div>
         

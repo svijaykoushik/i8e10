@@ -200,22 +200,6 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
         </div>
 
         <div>
-          <label htmlFor="inst-date" className={labelClasses}>
-            Date / தேதி
-          </label>
-          <div className="mt-2">
-            <input
-              type="date"
-              id="inst-date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className={inputBaseClasses}
-              required
-            />
-          </div>
-        </div>
-
-        <div>
           <label htmlFor="inst-note" className={labelClasses}>
             Note (Optional)
           </label>
@@ -227,6 +211,22 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
               onChange={(e) => setNote(e.target.value)}
               className={inputBaseClasses}
               placeholder="e.g., Part payment"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label htmlFor="inst-date" className={labelClasses}>
+            Date / தேதி
+          </label>
+          <div className="mt-2">
+            <input
+              type="date"
+              id="inst-date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className={inputBaseClasses}
+              required
             />
           </div>
         </div>
