@@ -162,6 +162,42 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
             <input type="number" name="amount" id="amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputBaseClasses} pl-7`} placeholder="0.00" required autoFocus />
           </div>
         </div>
+
+        <div>
+          <label htmlFor="description" className={labelClasses}>
+              Description (Optional) / விளக்கம் (விரும்பினால்)
+          </label>
+          <div className="mt-2">
+              <input
+                  type="text"
+                  name="description"
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className={inputBaseClasses}
+                  placeholder={
+                      isTransfer
+                          ? 'e.g., ATM Withdrawal'
+                          : formMode === 'income'
+                            ? 'Salary...'
+                            : 'Groceries...'
+                  }
+              />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+              {suggestions.map((suggestion) => (
+                  <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => setDescription(suggestion)}
+                      disabled={isActionDisabled}
+                      className="py-1 px-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-full text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                      {suggestion}
+                  </button>
+              ))}
+          </div>
+        </div>
         
         {isTransfer ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
@@ -206,18 +242,6 @@ const TransactionFormModal: FC<TransactionFormModalProps> = ({
                 <div className="mt-2"><input type="date" name="date" id="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required /></div>
             </div>
         )}
-
-        <div>
-          <label htmlFor="description" className={labelClasses}>Description (Optional) / விளக்கம் (விரும்பினால்)</label>
-          <div className="mt-2"><input type="text" name="description" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className={inputBaseClasses} placeholder={isTransfer ? 'e.g., ATM Withdrawal' : (formMode === 'income' ? 'Salary...' : 'Groceries...')} /></div>
-           <div className="mt-3 flex flex-wrap gap-2">
-            {suggestions.map(suggestion => (
-              <button key={suggestion} type="button" onClick={() => setDescription(suggestion)} disabled={isActionDisabled} className="py-1 px-3 bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-full text-xs font-medium hover:bg-slate-300 dark:hover:bg-slate-500 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        </div>
       </form>
     </Modal>
   );

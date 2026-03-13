@@ -133,19 +133,25 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
             </div>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-                <label htmlFor="inv-tx-amount" className={labelClasses}>Amount</label>
-                <div className="relative mt-2 rounded-md shadow-sm">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-slate-500 sm:text-sm">₹</span></div>
-                    <input type="number" id="inv-tx-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputBaseClasses} pl-7`} placeholder="0.00" required autoFocus step="0.01" />
-                </div>
+        <div>
+            <label htmlFor="inv-tx-amount" className={labelClasses}>Amount</label>
+            <div className="relative mt-2 rounded-md shadow-sm">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-slate-500 sm:text-sm">₹</span></div>
+                <input type="number" id="inv-tx-amount" value={amount} onChange={(e) => setAmount(e.target.value)} className={`${inputBaseClasses} pl-7`} placeholder="0.00" required autoFocus step="0.01" />
             </div>
-            <div>
-                <label htmlFor="inv-tx-date" className={labelClasses}>Date</label>
-                <div className="mt-2">
-                    <input type="date" id="inv-tx-date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
-                </div>
+        </div>
+
+        <div>
+            <label htmlFor="inv-tx-notes" className={labelClasses}>Notes (Optional)</label>
+            <div className="mt-2">
+                <input type="text" id="inv-tx-notes" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputBaseClasses} placeholder="e.g., SIP installment" />
+            </div>
+        </div>
+
+        <div>
+            <label htmlFor="inv-tx-date" className={labelClasses}>Date</label>
+            <div className="mt-2">
+                <input type="date" id="inv-tx-date" value={date} onChange={(e) => setDate(e.target.value)} className={inputBaseClasses} required />
             </div>
         </div>
         
@@ -178,13 +184,6 @@ const InvestmentTransactionFormModal: FC<InvestmentTransactionFormModalProps> = 
                 </div>
               </div>
             )}
-        </div>
-
-        <div>
-            <label htmlFor="inv-tx-notes" className={labelClasses}>Notes (Optional)</label>
-            <div className="mt-2">
-                <input type="text" id="inv-tx-notes" value={notes} onChange={(e) => setNotes(e.target.value)} className={inputBaseClasses} placeholder="e.g., SIP installment" />
-            </div>
         </div>
       </form>
     </Modal>
