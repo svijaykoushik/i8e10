@@ -2,6 +2,7 @@ import React, { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { DatabaseProvider } from './contexts/DatabaseContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -12,7 +13,9 @@ const root = ReactDOM.createRoot(rootElement);
 root.render(
   <StrictMode>
     <ThemeProvider>
+      <DatabaseProvider>
       <App />
+      </DatabaseProvider>
     </ThemeProvider>
   </StrictMode>
 );

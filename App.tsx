@@ -39,13 +39,13 @@ import AlertModal from './components/ui/AlertModal';
 import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
-import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType, Wallet } from './types';
 import * as cryptoService from './utils/cryptoService';
 import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV, generateWalletsCSV } from './utils/csvExporter';
 import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseWalletsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
+import { useDatabase } from './contexts/DatabaseContext';
 import RecoveryPhraseModal from './components/recovery/RecovertPhraseModal';
 import RecoverAccountModal from './components/recovery/RecoverAccountModal';
 import FullScreenLoader from './components/ui/FullScreenLoader';
@@ -77,61 +77,18 @@ const App: FC = () => {
   const [appStatus, setAppStatus] = useState<AppStatus>('LOADING');
   const [pendingRecoveryPhrase, setPendingRecoveryPhrase] = useState<string | null>(null);
   
-  // Data from IndexedDB
-  const [transactions, setTransactions] = useState<Transaction[] | undefined>();
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    const sub = liveQuery(async () => {
-      const txns = await db.transactionItems.orderBy('date').reverse().toArray()
-      return txns;
-    }).subscribe((val: Transaction[])=>setTransactions(val));
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [debts, setDebts] = useState<Debt[] | undefined>(undefined);
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    const sub = liveQuery(() => db.debts.orderBy('date').reverse().toArray()).subscribe((val:Debt[])=>setDebts(val));
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [debtInstallments, setDebtInstallments] = useState<DebtInstallment[] | undefined>();
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    const sub = liveQuery(() => db.debtInstallements.orderBy('date').reverse().toArray()).subscribe((val: DebtInstallment[])=>{
-      // console.log("Debt installments", val);
-      return setDebtInstallments(val)
-    });
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [investments, setInvestments] = useState<Investment[] | undefined>();
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    const sub = liveQuery(() => db.investments.orderBy('startDate').reverse().toArray()).subscribe((val: Investment[])=>setInvestments(val));
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [investmentTransactions, setInvestmentTransactions] = useState<InvestmentTransaction[] | undefined>();
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    const sub = liveQuery(() => db.investmentTransactions.toArray()).subscribe(setInvestmentTransactions);
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [wallets, setWallets] = useState<Wallet[]>([]);
-  useEffect(() => {
-    if (appStatus !== 'UNLOCKED') return;
-    // We bind to the 'wallets' table
-    const sub = liveQuery(() => db.wallets.toArray()).subscribe(setWallets);
-    return () => sub.unsubscribe();
-  }, [appStatus]);
-
-  const [settingsArray, setSettingsArray] = useState<AppSetting[] | undefined>();
-  useEffect(() => {
-    const sub = liveQuery(() => db.settings.toArray()).subscribe(setSettingsArray);
-    return () => sub.unsubscribe();
-  }, []);
+  // Data from DatabaseContext (live queries managed by DatabaseProvider)
+  const {
+    transactions,
+    debts,
+    debtInstallments,
+    investments,
+    investmentTransactions,
+    wallets,
+    settings: settingsArray,
+    isDataLoading,
+    actions,
+  } = useDatabase();
 
   const settings = useMemo(() => {
     const settingsMap: { [key: string]: any } = {};
@@ -221,7 +178,7 @@ const App: FC = () => {
 
   useEffect(() => {
     if (correctedDefaultWallet && correctedDefaultWallet !== defaultWallet) {
-      db.settings.put({ key: 'defaultWallet', value: correctedDefaultWallet });
+      actions.putSetting({ key: 'defaultWallet', value: correctedDefaultWallet });
     }
   }, [correctedDefaultWallet, defaultWallet]);
 
@@ -371,7 +328,7 @@ const App: FC = () => {
       }
       
       // Now ensure we open DB (this triggers onupgradeneeded in database.ts)
-      await db.open();
+      await actions.openDatabase();
   };
 
   useEffect(() => {
@@ -379,7 +336,7 @@ const App: FC = () => {
       // Run migration check FIRST
       await checkAndPerformMigration();
       
-      const salt = await db.settings.get('encryptionSalt');
+      const salt = await actions.getSetting('encryptionSalt');
       if (salt) {
         setAppStatus('LOCKED');
       } else {
@@ -490,7 +447,7 @@ const App: FC = () => {
       ];
 
       // Fix: Pass tables as an array to db.transaction
-      await db.transaction(
+      await actions.transaction(
         "rw",
         [
           db.transactionItems,
@@ -544,7 +501,7 @@ const App: FC = () => {
         // Step 2: Migrate data from localStorage to IndexedDB before encryption setup
         const oldDataKeys = ['transactions', 'debts', 'investments', 'investmentTransactions', 'wallets', 'onboardingCompleted', 'trackingConsent', 'defaultFilterPeriod', 'defaultWallet'];
         const anyOldDataExists = oldDataKeys.some(key => localStorage.getItem(key) !== null);
-        const isMigrated = await db.settings.get('migrationToIDBComplete_v1');
+        const isMigrated = await actions.getSetting('migrationToIDBComplete_v1');
         
         if (anyOldDataExists && !isMigrated) {
           try {
@@ -561,7 +518,7 @@ const App: FC = () => {
         }
         
         // Fix: Pass tables as an array to db.transaction
-        await db.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
+        await actions.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
             // Re-write all items to trigger encryption middleware.
             const tablesToReEncrypt = [db.transactionItems, db.debts, db.investments, db.investmentTransactions];
             for (const rawTable of tablesToReEncrypt) {
@@ -584,15 +541,15 @@ const App: FC = () => {
             }
             
             // Ensure default wallets exist if table is empty (Fresh Install / Wipe)
-            const walletCount = await db.wallets.count();
+            const walletCount = await actions.countWallets();
             if (walletCount === 0) {
-                 await db.wallets.bulkAdd([
+                 await actions.bulkAddWallets([
                     { id: crypto.randomUUID(), name: 'Cash / ரொக்கம்', type: 'cash', isDefault: true, isArchived: false },
                     { id: crypto.randomUUID(), name: 'Bank / வங்கி', type: 'bank', isDefault: false, isArchived: false }
                  ]);
             }
             
-            await db.settings.bulkPut([
+            await actions.bulkPutSettings([
               { key: 'encryptionSalt', value: salt },
               { key: 'encryptionVerifier', value: verifier },
               { key: 'wrappedMasterKey', value: wrappedMasterKey },
@@ -617,9 +574,9 @@ const App: FC = () => {
   };
 
   const handleUnlock = async (password: string) => {
-      const salt = (await db.settings.get('encryptionSalt'))?.value;
-      const verifier = (await db.settings.get('encryptionVerifier'))?.value;
-      const wrappedMasterKey = (await db.settings.get('wrappedMasterKey'))?.value;
+      const salt = (await actions.getSetting('encryptionSalt'))?.value;
+      const verifier = (await actions.getSetting('encryptionVerifier'))?.value;
+      const wrappedMasterKey = (await actions.getSetting('wrappedMasterKey'))?.value;
 
       if (!salt || !verifier || !wrappedMasterKey) {
           showAlert('Error', 'Encryption data is missing. Please reset the app.');
@@ -637,15 +594,15 @@ const App: FC = () => {
   };
 
     const handleRecoverAccount = async (phrase: string, newPassword: string): Promise<string | null> => {
-        const salt = (await db.settings.get('encryptionSalt'))?.value;
-        const wrappedKey = (await db.settings.get('wrappedMasterKeyByRecovery'))?.value;
-        const hash = (await db.settings.get('recoveryPhraseHash'))?.value;
+        const salt = (await actions.getSetting('encryptionSalt'))?.value;
+        const wrappedKey = (await actions.getSetting('wrappedMasterKeyByRecovery'))?.value;
+        const hash = (await actions.getSetting('recoveryPhraseHash'))?.value;
 
         if (!salt || !wrappedKey || !hash) return "Recovery data is missing from the database. Cannot proceed.";
 
         try {
             const { newWrappedMasterKey } = await cryptoService.recoverAndResetPassword(phrase, newPassword, salt, wrappedKey, hash);
-            await db.settings.put({ key: 'wrappedMasterKey', value: newWrappedMasterKey });
+            await actions.putSetting({ key: 'wrappedMasterKey', value: newWrappedMasterKey });
             
             // Now, unlock the app with the new password
             await handleUnlock(newPassword);
@@ -726,7 +683,7 @@ const App: FC = () => {
     newDefaultWallet: string,
     newDeficitThreshold: number
   ) => {
-    await db.transaction('rw', db.settings, db.wallets, async () => {
+    await actions.transaction('rw', [db.settings, db.wallets], async () => {
         // 1. Update Settings
         await db.settings.bulkPut([
             { key: "defaultFilterPeriod", value: newDefaultPeriod },
@@ -905,20 +862,12 @@ const App: FC = () => {
 
   const handleSaveTransaction = async (data: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'> & { id?: string }) => {
     try {
-      await db.transaction('rw', db.transactionItems, db.settings, async () => {
+      await actions.transaction('rw', [db.transactionItems, db.settings], async () => {
           if (data.id) { // Edit mode
               const txToUpdate = await db.transactionItems.get(data.id);
               if (txToUpdate) {
-                  // Ensure we map 'wallet' from generic form data to 'walletId' if needed, OR expect form to send 'walletId'
-                  // The form currently sends 'wallet' property. We should map it.
-                  // But we are updating types. The incoming 'data' is typed as Transaction (Omit id).
-                  // Transaction has walletId. So data should have walletId.
-                  // However, TransactionFormModal might still be sending 'wallet'.
-                  // We'll update TransactionFormModal shortly. For now assume data has correct shape or we patch it.
                   const { walletId, ...rest } = data as any; 
-                  // If 'wallet' property exists in data (from old form), map to walletId
                   const finalWalletId = walletId || (data as any).wallet;
-                  
                   await db.transactionItems.update(data.id, { ...txToUpdate, ...rest, walletId: finalWalletId });
               }
           } else { // Add mode
@@ -937,7 +886,7 @@ const App: FC = () => {
   };
 
   const handleBulkAddTransactions = async (newTransactions: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'>[]) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
+    await actions.transaction('rw', [db.transactionItems, db.settings], async () => {
         if (!appFirstUseDate) {
             await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
         }
@@ -955,7 +904,7 @@ const App: FC = () => {
   };
   
   const handleSaveTransfer = async (data: { amount: number; date: string; fromWallet: string; toWallet: string; description: string }) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
+    await actions.transaction('rw', [db.transactionItems, db.settings], async () => {
         if (!appFirstUseDate) {
             await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
         }
@@ -1004,7 +953,7 @@ const App: FC = () => {
     const { debtData, createTransaction, wallet } = data;
 
     if (debtData.id) { // Edit mode
-        await db.transaction('rw', db.debts, db.settings, async () => {
+        await actions.transaction('rw', [db.debts, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1012,7 +961,7 @@ const App: FC = () => {
         });
     } else { // Add mode
         
-        await db.transaction('rw', db.debts, db.transactionItems, db.settings, async () => {
+        await actions.transaction('rw', [db.debts, db.transactionItems, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1048,12 +997,9 @@ const App: FC = () => {
   }) => {
     if (!debtForInstallment) return;
 
-    await db.transaction(
+    await actions.transaction(
       "rw",
-      db.debts,
-      db.debtInstallements,
-      db.transactionItems,
-      db.settings,
+      [db.debts, db.debtInstallements, db.transactionItems, db.settings],
       async () => {
         const linkedDebt = await db.debts.get(data.installmentData.debtId);
         const allInstallments: DebtInstallment[] = await db.debtInstallements
@@ -1062,11 +1008,9 @@ const App: FC = () => {
 
         if (data.installmentData.id) {
           // Edit mode
-          await db.transaction(
+          await actions.transaction(
             "rw",
-            db.debtInstallements,
-            db.transactionItems,
-            db.settings,
+            [db.debtInstallements, db.transactionItems, db.settings],
             async () => {
               if (!appFirstUseDate) {
                 await db.settings.put({
@@ -1187,7 +1131,7 @@ const App: FC = () => {
     
 
     if (investmentData.id) { // Edit mode
-        await db.transaction('rw', db.investments, db.settings, async () => {
+        await actions.transaction('rw', [db.investments, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1197,7 +1141,7 @@ const App: FC = () => {
     } else { // Add mode
         const contributionAmount = initialContribution || 0;
         
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, db.settings, async () => {
+        await actions.transaction('rw', [db.investments, db.investmentTransactions, db.transactionItems, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1246,7 +1190,7 @@ const App: FC = () => {
     const { transactionData, createTransaction, wallet } = data;
 
     if (transactionData.id) { // Edit mode
-        await db.transaction('rw', db.investmentTransactions, db.settings, async () => {
+        await actions.transaction('rw', [db.investmentTransactions, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1254,7 +1198,7 @@ const App: FC = () => {
         });
     } else { // Add mode
 
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.settings, async () => {
+        await actions.transaction('rw', [db.investmentTransactions, db.transactionItems, db.settings], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1313,19 +1257,19 @@ const App: FC = () => {
     if ('person' in itemToDelete) { // Debt
         // Ensure installments are included in the same transaction to avoid
         // multiple transactions that can cause liveQuery to emit intermediate states.
-        await db.transaction('rw', [db.transactionItems, db.debts, db.debtInstallements], async () => {
+        await actions.transaction('rw', [db.transactionItems, db.debts, db.debtInstallements], async () => {
             await db.transactionItems.where({ debtId: itemToDelete.id }).delete();
             await db.debtInstallements.where({debtId: itemToDelete.id}).delete();
             await db.debts.delete(itemToDelete.id);
         });
     } else if ('investmentId' in itemToDelete) { // InvestmentTransaction
         const txToDelete = itemToDelete as InvestmentTransaction;
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, async () => {
+        await actions.transaction('rw', [db.investmentTransactions, db.transactionItems], async () => {
             await db.investmentTransactions.delete(txToDelete.id);
             await db.transactionItems.where({ investmentTransactionId: txToDelete.id }).delete();
         });
     } else if ('startDate' in itemToDelete) { // Investment
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, async () => {
+        await actions.transaction('rw', [db.investments, db.investmentTransactions, db.transactionItems], async () => {
             const investmentIdToDelete = itemToDelete.id;
             const childInvTxs = await db.investmentTransactions.where({ investmentId: investmentIdToDelete }).toArray();
             const childInvTxIds = childInvTxs.map((tx: any) => tx.id);
@@ -1338,10 +1282,9 @@ const App: FC = () => {
         });
     } else if ('debtId' in itemToDelete  && !('debtInstallmentId' in itemToDelete)){ // Installment
         const installment = itemToDelete as DebtInstallment;
-        await db.transaction(
+        await actions.transaction(
           "rw",
-          db.debtInstallements,
-          db.transactionItems,
+          [db.debtInstallements, db.transactionItems],
           async () => {
             await db.debtInstallements.delete(installment.id);
             await db.transactionItems.where({
@@ -1367,7 +1310,7 @@ const App: FC = () => {
                 // For simple transactions, or those linked to debts/investments where
                 // the parent item is NOT deleted, just delete the transaction itself.
                 // The atomic logic for deleting parents is handled when deleting the parent item.
-                await db.transactionItems.delete(idToDelete);
+                await actions.deleteTransaction(idToDelete);
                 setAnimatingOutIds(prev => prev.filter(id => id !== idToDelete));
             }, 300);
         }
@@ -1379,7 +1322,7 @@ const App: FC = () => {
   const handleSettleDebt = async (data: { settlementDate: string; createTransaction: boolean; wallet: string }) => {
     if (!settlingDebt) return;
 
-    await db.transaction('rw', db.transactionItems, db.debts, db.debtInstallements, async () => {
+    await actions.transaction('rw', [db.transactionItems, db.debts, db.debtInstallements], async () => {
 
         // Calculate remaining amount based on installments
         const installments = await db.debtInstallements.where({
@@ -1425,13 +1368,13 @@ const App: FC = () => {
   const handleForgiveDebt = async () => {
     if (!forgivingDebt) return;
 
-    await db.debts.update(forgivingDebt.id, { status: DebtStatus.WAIVED });
+    await actions.updateDebt(forgivingDebt.id, { status: DebtStatus.WAIVED });
     closeAllModals();
   };
 
   const handleUpdateInvestmentValue = async (newValue: number) => {
     if (!updatingInvestment) return;
-    await db.transaction('rw', db.investments, db.settings, async () => {
+    await actions.transaction('rw', [db.investments, db.settings], async () => {
       if (!appFirstUseDate) {
         await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
       }
@@ -1443,7 +1386,7 @@ const App: FC = () => {
   const handleSellInvestment = async (data: { wallet: string; createTransaction: boolean; sellDate: string }) => {
     if (!sellingInvestment) return;
 
-    await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.investments, async () => {
+    await actions.transaction('rw', [db.investmentTransactions, db.transactionItems, db.investments], async () => {
         const finalWithdrawal: InvestmentTransaction = {
             id: crypto.randomUUID(),
             investmentId: sellingInvestment.id,
@@ -1486,8 +1429,7 @@ const App: FC = () => {
 
   const handleClearAllData = async () => {
     cryptoService.clearKey();
-    await db.delete();
-    await db.open();
+    await actions.clearDatabase();
     setAppStatus('SETUP_REQUIRED');
     closeAllModals();
   };
@@ -1839,7 +1781,7 @@ const App: FC = () => {
         walletId: filter.walletId !== 'all' ? filter.walletId : (wallets[0]?.id || 'unknown'),
     };
 
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
+    await actions.transaction('rw', [db.transactionItems, db.settings], async () => {
         if (!appFirstUseDate) {
             await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
         }
@@ -1922,7 +1864,7 @@ const App: FC = () => {
         URL.revokeObjectURL(url);
         
         // Update last backup date on successful export
-        await db.settings.put({ key: 'lastBackupDate', value: new Date().toISOString() });
+        await actions.putSetting({ key: 'lastBackupDate', value: new Date().toISOString() });
         setBackupReminder({ show: false, days: null });
     } catch (e) {
         showAlert('Export Error', 'Could not export data. See the browser console for details.');
@@ -1946,7 +1888,7 @@ const App: FC = () => {
         const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors, ...walletErrors];
 
         // Data integrity check: Ensure investment transactions have a valid parent.
-        const existingInvestmentIds = new Set((await db.investments.toArray()).map(i => i.id));
+        const existingInvestmentIds = new Set(investments.map(i => i.id));
         const importedInvestmentIds = new Set(importedInvestments.map(i => i.id));
         const allValidInvestmentIds = new Set([...existingInvestmentIds, ...importedInvestmentIds]);
         
@@ -1966,8 +1908,8 @@ const App: FC = () => {
         
         const allErrors = [...allParseErrors, ...orphanedInvestmentTxErrors];
 
-        // Fix: Pass tables as an array to db.transaction and add type to summary
-        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
+        // Fix: Pass tables as an array to actions.transaction and add type to summary
+        const summary: ImportResultSummary = await actions.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings, db.wallets], async () => {
             const resultSummary: ImportResultSummary = {
                 tx: { added: 0, updated: 0 },
                 debt: { added: 0, updated: 0 },
@@ -2150,7 +2092,7 @@ const App: FC = () => {
   };
 
   const handleOnboardingComplete = () => {
-    db.settings.put({ key: 'onboardingCompleted', value: true });
+    actions.putSetting({ key: 'onboardingCompleted', value: true });
     setShowOnboarding(false);
   };
   
@@ -2166,11 +2108,11 @@ const App: FC = () => {
   const handleDismissBackupReminder = async () => {
     const dismissUntil = new Date();
     dismissUntil.setDate(dismissUntil.getDate() + 3); // Dismiss for 3 days
-    await db.settings.put({ key: 'backupReminderDismissedUntil', value: dismissUntil.toISOString() });
+    await actions.putSetting({ key: 'backupReminderDismissedUntil', value: dismissUntil.toISOString() });
     setBackupReminder({ show: false, days: null });
   };
 
-  const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined);
+  const isLoading = appStatus === 'UNLOCKED' && isDataLoading;
   
   if (appStatus === 'LOADING' || appStatus === 'MIGRATING') {
     return <FullScreenLoader message={appStatus === 'MIGRATING' ? 'Securing your data...' : 'Loading...'} />;
