@@ -46,111 +46,9 @@ import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, 
 import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseWalletsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
-
-// --- Recovery Modals (Inlined to avoid new files) ---
-
-const RecoveryPhraseModal: FC<{ phrase: string; onConfirm: () => void }> = ({ phrase, onConfirm }) => {
-    const [isConfirmed, setIsConfirmed] = useState(false);
-    const words = phrase.split(' ');
-
-    const handleDownload = () => {
-        const content = `i8·e10 Recovery Phrase\n\n${phrase}\n\nPlease store this phrase in a safe and secret place. It is the only way to recover your data if you forget your password.`;
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'i8e10-recovery-phrase.txt';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeInUp">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md transform flex flex-col">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Your Recovery Phrase</h2>
-                </div>
-                <div className="p-6">
-                    <p className="text-center text-red-600 dark:text-red-400 font-semibold">This is the ONLY time you will see this phrase. Write it down and keep it safe.</p>
-                    <div className="my-4 grid grid-cols-3 gap-2 text-center bg-slate-100 dark:bg-slate-900 p-4 rounded-lg">
-                        {words.map((word, index) => (
-                            <div key={index} className="font-mono text-slate-700 dark:text-slate-200">
-                                <span className="text-xs text-slate-400">{index + 1}. </span>{word}
-                            </div>
-                        ))}
-                    </div>
-                    <label className="flex items-center space-x-3 mt-4 cursor-pointer">
-                        <input type="checkbox" checked={isConfirmed} onChange={() => setIsConfirmed(!isConfirmed)} className="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" />
-                        <span className="text-slate-700 dark:text-slate-200">I have written down my recovery phrase.</span>
-                    </label>
-                </div>
-                <div className="p-6 border-t border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row-reverse gap-3">
-                    <button onClick={onConfirm} disabled={!isConfirmed} className="w-full sm:w-auto btn-press py-3 px-4 text-white bg-green-600 hover:bg-green-700 rounded-md shadow-sm font-medium disabled:bg-green-400 disabled:cursor-not-allowed">
-                        Finish Setup
-                    </button>
-                    <button onClick={handleDownload} className="w-full sm:w-auto btn-press flex items-center justify-center gap-2 py-3 px-4 text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm font-medium">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download Phrase
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-const RecoverAccountModal: FC<{ onRecover: (phrase: string, newPass: string) => Promise<string | null>; onClose: () => void; onRequestReset: () => void; }> = ({ onRecover, onClose, onRequestReset }) => {
-    const [phrase, setPhrase] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
-        if (newPassword !== confirmPassword) {
-            setError("New passwords do not match.");
-            return;
-        }
-        setIsProcessing(true);
-        setError('');
-        const err = await onRecover(phrase, newPassword);
-        if (err) {
-            setError(err);
-            setIsProcessing(false);
-        }
-    };
-
-    const inputClasses = "block w-full rounded-lg border-0 bg-slate-100 dark:bg-slate-700 py-2.5 px-3 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition";
-
-    return (
-        <div className="fixed inset-0 z-50 flex justify-center items-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fadeInUp">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md transform flex flex-col">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Recover Your Account</h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-slate-600">&times;</button>
-                </div>
-                <form onSubmit={handleSubmit}>
-                    <div className="p-6 space-y-4">
-                        <textarea value={phrase} onChange={e => setPhrase(e.target.value)} rows={3} placeholder="Enter your 12-word recovery phrase..." className={inputClasses} required />
-                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" className={inputClasses} required />
-                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm New Password" className={inputClasses} required />
-                        {error && <p className="text-sm text-red-500">{error}</p>}
-                    </div>
-                    <div className="p-6 border-t border-slate-200 dark:border-slate-700 space-y-2">
-                        <button type="submit" disabled={isProcessing} className="w-full btn-press py-3 px-4 text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm font-medium disabled:bg-indigo-400">
-                            {isProcessing ? 'Recovering...' : 'Recover & Set New Password'}
-                        </button>
-                        <button type="button" onClick={onRequestReset} className="w-full text-center text-sm text-slate-500 hover:text-red-500">Still can't recover? Reset App</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
+import RecoveryPhraseModal from './components/recovery/RecovertPhraseModal';
+import RecoverAccountModal from './components/recovery/RecoverAccountModal';
+import FullScreenLoader from './components/ui/FullScreenLoader';
 
 // --- App Component ---
 
@@ -173,16 +71,6 @@ const getLocalDateString = () => {
 };
 
 type AppStatus = 'LOADING' | 'LOCKED' | 'SETUP_REQUIRED' | 'UNLOCKED' | 'MIGRATING';
-
-const FullScreenLoader: FC<{ message: string }> = ({ message }) => (
-    <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex flex-col justify-center items-center z-50">
-        <svg className="animate-spin h-10 w-10 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        <p className="mt-4 text-lg font-semibold text-slate-700 dark:text-slate-200">{message}</p>
-    </div>
-);
 
 
 const App: FC = () => {
