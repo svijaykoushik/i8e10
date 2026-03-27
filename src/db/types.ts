@@ -5,6 +5,8 @@ import type {
   InvestmentTransaction,
   DebtInstallment,
   Wallet,
+  Account,
+  LedgerTransaction,
 } from "../../types";
 
 // Minimal database interface used by CustomCollection to avoid circular import
@@ -17,6 +19,42 @@ export interface DatabaseLike {
   iterateKeys?(storeName: string, direction?: IDBCursorDirection, filterFn?: (item: any) => boolean, whereCriteria?: string | Partial<any>, indexName?: string): Promise<IDBValidKey[]>;
   getKeyPath(storeName: string): string;
   clear(storeName: string): Promise<void>;
+}
+
+export interface SchemaIndex {
+  name: string;
+  keyPath?: string | string[];
+  multiEntry?: boolean;
+  unique?: boolean;
+}
+
+export interface SchemaStoreDefinition {
+  key: {
+    path: string;
+    autoIncrement?: boolean;
+  };
+  indexes?: SchemaIndex[];
+}
+
+export type SchemaDefinition = Record<string, SchemaStoreDefinition>;
+
+export interface MigrationContext {
+  db: IDBDatabase;
+  tx: IDBTransaction;
+}
+
+export interface MigrationDefinition {
+  version: number;
+  schema: SchemaDefinition;
+  up?: (context: MigrationContext) => Promise<void>;
+}
+
+export interface CustomDatabaseConfig {
+  name: string;
+  version: number;
+  schema: SchemaDefinition;
+  migrations?: MigrationDefinition[];
+  requireMigrationContinuity?: boolean;
 }
 
 export interface IDBResult<T> {
@@ -87,6 +125,8 @@ export interface DatabaseSchema {
   debtInstallments: Table<DebtInstallment>;
   settings: Table<AppSetting, string>;
   wallets: Table<Wallet, string>; // Added wallets to DatabaseSchema
+  accounts: Table<Account, string>; // Added accounts to DatabaseSchema
+  ledgerTransactions: Table<LedgerTransaction, string>; // Added ledgerTransactions to DatabaseSchema
 }
 
 export interface Middleware {

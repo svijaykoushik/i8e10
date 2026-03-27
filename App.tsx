@@ -4,6 +4,7 @@ import AddTransactionButton from './components/AddTransactionButton';
 import PasswordSetupModal from './components/auth/PasswordSetupModal';
 import UnlockModal from './components/auth/UnlockModal';
 import BackupReminderBanner from './components/BackupReminderBanner';
+import BackupBeforeMigrationModal from './components/BackupBeforeMigrationModal';
 import BalanceSummary from './components/BalanceSummary';
 import InstallAppBanner from './components/InstallAppBanner';
 import UpdateAvailableBanner from './components/UpdateAvailableBanner';
@@ -46,6 +47,7 @@ import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, 
 import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseWalletsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
+import { migrateToDoubleEntry, checkMigrationStatus, markMigrationInProgress, resetMigrationStatus } from './src/migrations/doubleEntry';
 
 // --- Recovery Modals (Inlined to avoid new files) ---
 
@@ -298,6 +300,9 @@ const App: FC = () => {
   const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
   const [importSummaryModal, setImportSummaryModal] = useState<{ isOpen: boolean; summary: any | null }>({ isOpen: false, summary: null });
   const [isRecoverAccountModalOpen, setIsRecoverAccountModalOpen] = useState(false);
+  const [isBackupBeforeMigrationModalOpen, setIsBackupBeforeMigrationModalOpen] = useState(false);
+  const [isMigrationInProgress, setIsMigrationInProgress] = useState(false);
+  const [migrationProgress, setMigrationProgress] = useState<{ message: string; status: 'pending' | 'in-progress' | 'complete' | 'failed' }>({ message: '', status: 'pending' });
   
   // Item state for modals
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -543,6 +548,137 @@ const App: FC = () => {
     }
   }, [appStatus, lastBackupDate, backupReminderDismissedUntil, transactions, debts, investments, appFirstUseDate]);
 
+  // Check for pending double-entry migration after user is UNLOCKED
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+
+    const checkAndShowMigration = async () => {
+      try {
+        const migrationStatus = await checkMigrationStatus();
+        if (migrationStatus.status === 'pending') {
+          // Show backup modal to user
+          setIsBackupBeforeMigrationModalOpen(true);
+        } else if (migrationStatus.status === 'in-progress') {
+          // Migration was interrupted - allow user to retry
+          console.warn('Migration was interrupted. Status: in-progress. Offering retry...');
+          showAlert(
+            'Migration Interrupted',
+            'The double-entry migration was interrupted. Click OK to retry the migration.'
+          );
+          // Reset status back to pending so user can retry
+          try {
+            await resetMigrationStatus();
+            setIsBackupBeforeMigrationModalOpen(true);
+          } catch (error) {
+            console.error('Failed to reset migration status for retry:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check migration status:', error);
+      }
+    };
+
+    checkAndShowMigration();
+  }, [appStatus]);
+
+  // Handle backup before migration
+  const handleBackupBeforeMigration = async () => {
+    try {
+      setMigrationProgress({ message: 'Exporting your data...', status: 'in-progress' });
+
+      // Generate exports
+      const csvPromises = [
+        generateTransactionsCSV(transactions || [], wallets),
+        generateDebtsCSV(debts || []),
+        generateInvestmentsCSV(investments || []),
+        generateInvestmentTransactionsCSV(investmentTransactions || []),
+        generateDebtInstallmentsCSV(debtInstallments || []),
+        generateWalletsCSV(wallets),
+      ];
+
+      const csvs = await Promise.all(csvPromises);
+
+      // Zip and download
+      const zipBlob = await exportToZip({
+        transactionCSV: csvs[0],
+        debtCSV: csvs[1],
+        investmentCSV: csvs[2],
+        investmentTransactionsCSV: csvs[3],
+        debtInstallmentsCSV: csvs[4],
+      });
+
+      // Force download
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `i8e10-backup-before-ledger-${getLocalDateString()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setMigrationProgress({ message: 'Backup complete. Ready to migrate.', status: 'complete' });
+    } catch (error) {
+      console.error('Backup failed:', error);
+      showAlert('Backup Failed', 'Could not backup your data. Please try exporting manually from Settings before proceeding.');
+      setMigrationProgress({ message: 'Backup failed', status: 'failed' });
+    }
+  };
+
+  // Handle migration completion after user confirms backup
+  const handleMigrationConfirmed = async () => {
+    setIsBackupBeforeMigrationModalOpen(false);
+    setAppStatus('MIGRATING');
+    setMigrationProgress({ message: 'Starting migration...', status: 'in-progress' });
+
+    try {
+      // Mark migration as in-progress (so if it fails, we can retry)
+      await markMigrationInProgress();
+
+      // Run the migration
+      const result = await migrateToDoubleEntry();
+
+      if (result.success) {
+        setMigrationProgress({ message: 'Migration complete! Finalizing...', status: 'in-progress' });
+        
+        // Update last backup date after successful migration
+        await db.settings.put({
+          key: 'lastBackupDate',
+          value: new Date().toISOString(),
+        });
+
+        setMigrationProgress({ message: 'Migration complete! Restarting app...', status: 'complete' });
+        
+        // Wait a bit to ensure all DB writes are flushed before reload
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Reload the app
+        window.location.reload();
+      } else {
+        throw new Error(result.error || result.message);
+      }
+    } catch (error) {
+      console.error('Migration failed:', error);
+      // Reset migration status to pending so user can retry
+      try {
+        await resetMigrationStatus();
+      } catch (resetError) {
+        console.error('Failed to reset migration status:', resetError);
+      }
+      setAppStatus('UNLOCKED');
+      setMigrationProgress({
+        message: `Migration failed: ${String(error)}`,
+        status: 'failed',
+      });
+      showAlert('Migration Failed', `The migration encountered an error: ${String(error)}. Your data is safe. You can try again.`);
+    }
+  };
+
+  // Cancel migration and return to normal state
+  const handleMigrationCancelled = () => {
+    setIsBackupBeforeMigrationModalOpen(false);
+    setMigrationProgress({ message: '', status: 'pending' });
+  };
 
   /**
    * Handles migration from Local Storage to Indexed DB
@@ -2284,8 +2420,12 @@ const App: FC = () => {
 
   const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined);
   
-  if (appStatus === 'LOADING' || appStatus === 'MIGRATING') {
-    return <FullScreenLoader message={appStatus === 'MIGRATING' ? 'Securing your data...' : 'Loading...'} />;
+  if (appStatus === 'LOADING') {
+    return <FullScreenLoader message="Loading..." />;
+  }
+
+  if (appStatus === 'MIGRATING') {
+    return <FullScreenLoader message={migrationProgress.message || 'Migrating to secure ledger system...'} />;
   }
   
   if (pendingRecoveryPhrase) {
@@ -2663,6 +2803,15 @@ const App: FC = () => {
           onClose={() => setAlertModal({ isOpen: false, title: '', message: '' })}
           title={alertModal.title}
           message={alertModal.message}
+        />
+      )}
+
+      {isBackupBeforeMigrationModalOpen && (
+        <BackupBeforeMigrationModal
+          isOpen={isBackupBeforeMigrationModalOpen}
+          onConfirmBackupDone={handleMigrationConfirmed}
+          onCancel={handleMigrationCancelled}
+          onExport={handleBackupBeforeMigration}
         />
       )}
 
