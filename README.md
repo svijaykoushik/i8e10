@@ -1,10 +1,10 @@
-# i8·e10 | வரவு செலவு கணக்கு
+# i8·e10 — Personal Finance Ledger & Wealth Manager
 
 **A secure, private, and powerful personal finance tracker that works entirely offline. All your data stays on your device, protected by strong encryption.**
 
 i8·e10 is designed for clarity and ease of use, helping you manage your finances without the need for an account or an internet connection. Its bilingual English/Tamil interface makes it accessible to a wider audience.
 
-![image](public/screenshots/pwa-screenshot-wide-hero-view.png)
+![image](hero.png)
 
 ---
 
