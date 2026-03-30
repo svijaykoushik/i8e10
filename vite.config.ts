@@ -104,7 +104,7 @@ export default defineConfig(({ mode }) => {
           start_url: "/?utm_source=pwa",
           display: "standalone",
           background_color: "#f2efff",
-          theme_color: "#8c52ff",
+          theme_color: "#4f39f6",
           screenshots: [
             {
               sizes: "1080x1920",
