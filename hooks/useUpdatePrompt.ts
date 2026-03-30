@@ -3,8 +3,10 @@ import { registerSW } from 'virtual:pwa-register';
 
 interface UseUpdatePromptResult {
   showBanner: boolean;
+  showOfflineReady: boolean;
   onUpdate: () => void;
   onDismiss: () => void;
+  onDismissOfflineReady: () => void;
 }
 
 /**
@@ -22,6 +24,7 @@ interface UseUpdatePromptResult {
  */
 export function useUpdatePrompt(): UseUpdatePromptResult {
   const [showBanner, setShowBanner] = useState(false);
+  const [showOfflineReady, setShowOfflineReady] = useState(false);
   const updateSW = useRef<((reloadPage?: boolean) => Promise<void>) | null>(null);
 
   useEffect(() => {
@@ -30,7 +33,9 @@ export function useUpdatePrompt(): UseUpdatePromptResult {
       onNeedRefresh() {
         setShowBanner(true);
       },
-      // onOfflineReady is intentionally omitted — we don't show a banner for it.
+      onOfflineReady() {
+        setShowOfflineReady(true);
+      },
     });
 
     // Also detect a SW that was already in the "waiting" state before
@@ -52,6 +57,10 @@ export function useUpdatePrompt(): UseUpdatePromptResult {
     setShowBanner(false);
   }, []);
 
-  return { showBanner, onUpdate, onDismiss };
+  const onDismissOfflineReady = useCallback(() => {
+    setShowOfflineReady(false);
+  }, []);
+
+  return { showBanner, showOfflineReady, onUpdate, onDismiss, onDismissOfflineReady };
 }
 
