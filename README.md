@@ -1,8 +1,8 @@
 # i8·e10 — Personal Finance Ledger & Wealth Manager
 
-**A secure, private, and powerful personal finance tracker that works entirely offline. All your data stays on your device, protected by strong encryption.**
+**A secure, private, and powerful personal finance tracker designed to work offline—your financial data is encrypted and stored locally on your device.**
 
-i8·e10 is designed for clarity and ease of use, helping you manage your finances without the need for an account or an internet connection. Its bilingual English/Tamil interface makes it accessible to a wider audience.
+i8·e10 is designed for clarity and ease of use, helping you manage your finances without the need for an account or a constant internet connection. Its bilingual English/Tamil interface makes it accessible to a wider audience.
 
 ![image](hero.png)
 
@@ -26,7 +26,7 @@ The app serves as a tool to help you track that very balance and ensure your "ex
 
 ## ✨ Key Features
 
--   **🔒 Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts, no cloud, no tracking.
+-   **🔒 Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts. No cloud storage. No access to your financial data—ever.
 -   **🔑 Secure Password & Recovery:** The app is protected by a password you set. If you forget it, a unique 12-word recovery phrase—generated during setup—is the only way to regain access to your data.
 -   **📊 Comprehensive Tracking:** Go beyond simple expense tracking.
     -   **Transactions:** Log income, expenses, and wallet-to-wallet transfers.
