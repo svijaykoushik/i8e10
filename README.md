@@ -26,7 +26,7 @@ The app serves as a tool to help you track that very balance and ensure your "ex
 
 ## ✨ Key Features
 
--   **🔒 End-to-End Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts, no cloud, no tracking.
+-   **🔒 Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts, no cloud, no tracking.
 -   **🔑 Secure Password & Recovery:** The app is protected by a password you set. If you forget it, a unique 12-word recovery phrase—generated during setup—is the only way to regain access to your data.
 -   **📊 Comprehensive Tracking:** Go beyond simple expense tracking.
     -   **Transactions:** Log income, expenses, and wallet-to-wallet transfers.
