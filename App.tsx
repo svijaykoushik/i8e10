@@ -39,6 +39,7 @@ import AlertModal from './components/ui/AlertModal';
 import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
+import OfflineReadySnackbar from './components/OfflineReadySnackbar';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
@@ -264,7 +265,7 @@ const App: FC = () => {
   // A2HS Install Banner — only start engagement timer after unlock + onboarding
   const installPromptReady = appStatus === 'UNLOCKED' && !!onboardingCompleted;
   const { showBanner: showInstallBanner, onInstall: handleInstallApp, onDismiss: handleDismissInstall } = useInstallPrompt(installPromptReady);
-  const { showBanner: showUpdateBanner, onUpdate: handleUpdateApp, onDismiss: handleDismissUpdate } = useUpdatePrompt();
+  const { showBanner: showUpdateBanner, showOfflineReady, onUpdate: handleUpdateApp, onDismiss: handleDismissUpdate, onDismissOfflineReady } = useUpdatePrompt();
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -2395,6 +2396,8 @@ const App: FC = () => {
       {showUpdateBanner && (
         <UpdateAvailableBanner onUpdate={handleUpdateApp} onDismiss={handleDismissUpdate} />
       )}
+
+      <OfflineReadySnackbar show={showOfflineReady} onDismiss={onDismissOfflineReady} />
     </div>
   );
 };
