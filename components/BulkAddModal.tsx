@@ -152,6 +152,12 @@ const parseLine = (
     };
 };
 
+const MagicWandIcon: FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={className || "w-5 h-5"}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+    </svg>
+);
+
 const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets }) => {
     const [view, setView] = useState<'input' | 'review'>('input');
     const [rawText, setRawText] = useState('');
@@ -159,6 +165,32 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
     const [commonDate, setCommonDate] = useState(getLocalDateString());
     const [commonWallet, setCommonWallet] = useState('');
     
+    // Refs for synced scrolling
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const backdropRef = useRef<HTMLDivElement>(null);
+
+    // Live parsing state
+    const liveParsedLinesInfo = useMemo(() => {
+        return rawText.split('\n').map((line, index) => {
+            const originalLine = line; 
+            const trimmed = line.trim();
+            if (!trimmed) {
+                return { originalLine, isBlank: true, isValid: true };
+            }
+            try {
+                const parsed = parseLine(originalLine, commonDate, commonWallet);
+                return { originalLine, isBlank: false, isValid: parsed ? parsed.isValid : false, parsed };
+            } catch (e) {
+                console.error("Critical error parsing line:", line, e);
+                return { originalLine, isBlank: false, isValid: false, error: "An error occurred during parsing." };
+            }
+        });
+    }, [rawText, commonDate, commonWallet]);
+
+    const liveValidCount = useMemo(() => liveParsedLinesInfo.filter(l => l.parsed?.isValid).length, [liveParsedLinesInfo]);
+
+    const liveLineCount = useMemo(() => liveParsedLinesInfo.filter(l => !l.isBlank).length, [liveParsedLinesInfo]);
+
     // State for analytics
     const savedRef = useRef(false);
     const wasOpenRef = useRef(false);
@@ -178,22 +210,27 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
         wasOpenRef.current = isOpen;
     }, [isOpen, wallets]);
 
+    const handleScroll = () => {
+        if (textareaRef.current && backdropRef.current) {
+            backdropRef.current.scrollTop = textareaRef.current.scrollTop;
+            backdropRef.current.scrollLeft = textareaRef.current.scrollLeft;
+        }
+    };
+
     const handleReview = () => {
-        const linesToParse = rawText.split('\n').filter(l => l.trim());
-        const parsedLines = linesToParse.map(line => {
-            try {
-                // The parseLine function is designed to not throw, but this adds a safety net.
-                return parseLine(line, commonDate, commonWallet);
-            } catch (e) {
-                console.error("Critical error parsing line:", line, e);
-                return {
-                    id: crypto.randomUUID(),
-                    isValid: false,
-                    originalLine: line,
-                    error: "An unexpected error occurred during parsing."
-                };
-            }
-        }).filter(Boolean) as ParsedLine[];
+        const parsedLines = liveParsedLinesInfo
+            .filter(info => !info.isBlank)
+            .map(info => {
+                 if (info.parsed) {
+                     return info.parsed;
+                 }
+                 return {
+                     id: crypto.randomUUID(),
+                     isValid: false,
+                     originalLine: info.originalLine,
+                     error: info.error || "Invalid format."
+                 } as ParsedLineInvalid;
+            });
 
         setLines(parsedLines);
         setView('review');
@@ -229,10 +266,15 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
     let footerContent = null;
     if (view === 'input') {
         footerContent = (
-            <>
+            <div className="flex justify-between items-center w-full">
                 <button type="button" onClick={onClose} className="btn-press bg-white dark:bg-slate-700 py-2 px-4 border border-slate-300 dark:border-slate-600 rounded-md shadow-sm text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-600">Cancel</button>
-                <button type="button" onClick={handleReview} disabled={!rawText.trim()} className="btn-press inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">Review</button>
-            </>
+                <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                        {liveValidCount > 0 ? `${liveValidCount} / ${liveLineCount} valid` : ''}
+                    </p>
+                    <button type="button" onClick={handleReview} disabled={!rawText.trim()} className="btn-press inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400">Review</button>
+                </div>
+            </div>
         );
     } else {
         footerContent = (
@@ -250,8 +292,15 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
         );
     }
 
+    const modalTitle = (
+        <div className="flex items-center gap-2">
+            <MagicWandIcon className="w-6 h-6 text-indigo-500" />
+            <span>Bulk Add Transactions</span>
+        </div>
+    );
+
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Bulk Add Transactions" footer={footerContent}>
+        <Modal isOpen={isOpen} onClose={onClose} title={modalTitle} footer={footerContent}>
             {view === 'input' && (
                 <div className="space-y-4">
                     <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -274,14 +323,45 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                             </div>
                         </div>
                     </div>
-                     <textarea
-                        value={rawText}
-                        onChange={(e) => setRawText(e.target.value)}
-                        rows={8}
-                        className={`${inputBaseClasses} font-mono`}
-                        placeholder={"Coffee 150\nLunch with friends 800 yesterday\nSalary Received 50000 income 2023-10-01"}
-                        autoFocus
-                     />
+                    <div className="relative w-full group">
+                        <div
+                            ref={backdropRef}
+                            className={`${inputBaseClasses} font-mono absolute inset-0 pointer-events-none whitespace-pre-wrap break-words overflow-y-auto`}
+                            aria-hidden="true"
+                            style={{
+                                color: 'transparent',
+                                borderColor: 'transparent',
+                                zIndex: 0
+                            }}
+                        >
+                            {liveParsedLinesInfo.map((info, index) => {
+                                const isError = !info.isBlank && !info.isValid;
+                                return (
+                                    <React.Fragment key={index}>
+                                        <span className={isError ? "underline decoration-red-500 decoration-wavy underline-offset-4 decoration-2" : ""}>
+                                            {info.originalLine || ' '}
+                                        </span>
+                                        {index < liveParsedLinesInfo.length - 1 ? '\n' : ''}
+                                    </React.Fragment>
+                                );
+                            })}
+                            {rawText.endsWith('\n') && <br />}
+                        </div>
+                        <textarea
+                            ref={textareaRef}
+                            value={rawText}
+                            onChange={(e) => setRawText(e.target.value)}
+                            onScroll={handleScroll}
+                            rows={8}
+                            className={`${inputBaseClasses} font-mono relative z-10 m-0`}
+                            style={{
+                                backgroundColor: 'transparent',
+                                color: 'inherit',
+                            }}
+                            placeholder={"Coffee 150\nLunch with friends 800 yesterday\nSalary Received 50000 income 2023-10-01"}
+                            autoFocus
+                        />
+                    </div>
                 </div>
             )}
             {view === 'review' && (
@@ -293,7 +373,10 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                         {lines.map((line) => {
                             if (line.isValid) {
                                 return (
-                                    <div key={line.id} className="p-3 rounded-lg bg-white dark:bg-slate-800 shadow-sm space-y-2 border-l-4 border-slate-200 dark:border-slate-700">
+                                    <div key={line.id} className="p-3 rounded-lg bg-white dark:bg-slate-800 shadow-sm space-y-2 border-l-4 border-slate-200 dark:border-slate-700 relative overflow-hidden">
+                                        <div className="absolute top-1 right-1 opacity-20 pointer-events-none">
+                                            <MagicWandIcon className="w-4 h-4 text-indigo-500" />
+                                        </div>
                                         <div className="grid grid-cols-12 gap-x-2 gap-y-2 items-center">
                                             <div className="col-span-12 sm:col-span-7">
                                                 <label className="text-xs font-medium text-slate-500">Description</label>
@@ -326,7 +409,10 @@ const BulkAddModal: FC<BulkAddModalProps> = ({ isOpen, onClose, onSave, wallets 
                             } else {
                                 const invalidLine = line as ParsedLineInvalid;
                                 return (
-                                    <div key={invalidLine.id} className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30">
+                                    <div key={invalidLine.id} className="p-3 rounded-lg bg-red-100 dark:bg-red-900/30 border-l-4 border-red-200 dark:border-red-500/30 relative overflow-hidden">
+                                        <div className="absolute top-1 right-1 opacity-20 pointer-events-none">
+                                            <MagicWandIcon className="w-4 h-4 text-red-500 dark:text-red-300" />
+                                        </div>
                                         <div>
                                             <p className="text-sm font-mono text-red-700 dark:text-red-300">{invalidLine.originalLine}</p>
                                             <p className="text-xs text-red-600 dark:text-red-400 font-semibold">{invalidLine.error}</p>
