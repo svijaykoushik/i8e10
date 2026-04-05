@@ -1,12 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>
-    i8·e10 | Private & Offline Expense Tracker - வரவு செலவு கணக்கு
-  </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>i8·e10 — Personal Finance Ledger & Wealth Manager</title>
   <meta name="description"
     content="A secure, private, and offline personal finance tracker. Manage expenses, debts, and investments in English & Tamil. No accounts. No cloud. End-to-end encrypted." />
   <meta name="keywords"
@@ -27,452 +24,370 @@
   <meta name="twitter:description"
     content="Take control of your money with a private, offline expense tracker. No accounts, no cloud. End-to-end encrypted." />
   <meta name="twitter:image" content="https://i8e10.vercel.app/i8e10-og-image.png" />
-
-  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
-
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Outfit', 'sans-serif'],
-            tamil: ['Noto Sans Tamil', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              200: '#bae6fd',
-              300: '#7dd3fc',
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              800: '#075985',
-              900: '#0c4a6e',
-              950: '#082f49',
-            },
-            dark: {
-              bg: '#0a0a0a',
-              card: '#171717',
-              border: '#262626',
-            }
-          },
-          animation: {
-            'float': 'float 6s ease-in-out infinite',
-            'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          },
-          keyframes: {
-            float: {
-              '0%, 100%': { transform: 'translateY(0)' },
-              '50%': { transform: 'translateY(-20px)' },
-            }
-          }
-        },
-      },
-    };
-  </script>
+  
   <style>
-    .glass {
-      background: rgba(23, 23, 23, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+    body {
+      font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Tamil", "Latha", sans-serif;
     }
 
-    .glass-card {
-      background: linear-gradient(145deg, rgba(38, 38, 38, 0.6) 0%, rgba(23, 23, 23, 0.8) 100%);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Animation Utilities to replace Framer Motion */
+    .reveal-hidden {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+    }
+    .reveal-visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    .glass-card:hover {
-      transform: translateY(-5px);
-      border-color: rgba(14, 165, 233, 0.3);
-      box-shadow: 0 20px 40px -10px rgba(14, 165, 233, 0.15);
+    .hero-right-hidden {
+      opacity: 0;
+      transform: translateY(20px) scale(0.98);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      transition-delay: 150ms;
+    }
+    .hero-right-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
 
-    .text-gradient {
-      background: linear-gradient(to right, #38bdf8, #818cf8);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+    .slide-left-hidden {
+      opacity: 0;
+      transform: translateX(-24px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+    .slide-left-visible {
+      opacity: 1;
+      transform: translateX(0);
     }
 
-    .blob {
-      position: absolute;
-      filter: blur(80px);
-      z-index: -1;
-      opacity: 0.4;
+    .slide-right-hidden {
+      opacity: 0;
+      transform: translateX(24px);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      transition-delay: 80ms;
+    }
+    .slide-right-visible {
+      opacity: 1;
+      transform: translateX(0);
     }
   </style>
 </head>
-
-<body class="bg-dark-bg text-gray-100 font-sans antialiased overflow-x-hidden">
-
-  <!-- Background Effects -->
-  <div class="fixed inset-0 pointer-events-none">
-    <div class="blob bg-brand-600 w-96 h-96 rounded-full top-0 left-0 -translate-x-1/2 -translate-y-1/2"></div>
-    <div class="blob bg-purple-600 w-[30rem] h-[30rem] rounded-full bottom-0 right-0 translate-x-1/3 translate-y-1/3">
-    </div>
-  </div>
-
-  <!-- Navigation -->
-  <nav class="fixed w-full z-50 transition-all duration-300 glass border-b border-white/5">
-    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-      <a href="#" class="flex items-center gap-3 group">
-        <img src="assets/images/logo.png" alt="i8.e10 Logo"
-          class="w-10 h-10 rounded-xl shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-300">
-        <span class="text-xl font-bold tracking-tight">i8·e10</span>
-      </a>
-
-      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-400">
-        <a href="#features" class="hover:text-white transition-colors">Features</a>
-        <a href="#philosophy" class="hover:text-white transition-colors">Our Story</a>
-        <a href="#privacy" class="hover:text-white transition-colors">Privacy</a>
-        <a href="#excel-evolution" class="hover:text-white transition-colors">Excel Alternative</a>
+<body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
+  
+  <header class="sticky top-0 z-50 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl">
+    <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-3">
+        <div class="flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold text-white shadow-lg">
+          <img src="./assets/images/logo.png" alt="Logo" class="h-8 w-8">
+        </div>
+        <p class="text-base font-semibold tracking-tight">i8·e10</p>
       </div>
-
-      <a href="https://i8e10.vercel.app"
-        class="bg-white text-dark-bg px-6 py-2.5 rounded-full font-semibold text-sm hover:bg-gray-100 transition-all duration-300 shadow-lg shadow-white/10 hover:shadow-white/20 transform hover:-translate-y-0.5">
+      <nav class="hidden items-center gap-6 text-sm text-slate-600 md:flex">
+        <a href="#features" class="transition hover:text-slate-900">Features</a>
+        <a href="#excel-killer" class="transition hover:text-slate-900">Excel Killer</a>
+        <a href="#specs" class="transition hover:text-slate-900">Specs</a>
+      </nav>
+      <a href="https://i8e10.vercel.app" class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:scale-105" style="background-color: #4f39f6;">
         Launch App
       </a>
     </div>
-  </nav>
+  </header>
 
-  <!-- Hero Section -->
-  <section class="min-h-screen pt-32 pb-20 flex items-center relative">
-    <div class="container mx-auto px-6">
-      <div class="flex flex-col lg:flex-row items-center gap-16">
-        <div class="lg:w-1/2 space-y-8 animate-fade-in-up">
-          <div
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-brand-400 font-medium">
-            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            100% Offline & Private
-          </div>
-
-          <h1 class="text-5xl lg:text-7xl font-bold leading-tight tracking-tight">
-            Control Your Money <br>
-            <span class="text-gradient">Without the Cloud</span>
-          </h1>
-
-          <p class="text-xl text-gray-400 max-w-xl leading-relaxed">
-            Take control of your money with a <strong class="text-gray-100">Private Offline Expense Tracker</strong>.
-            No accounts, no tracking, just pure <strong class="text-gray-100">Data Sovereignty</strong>.
-            Your financial data never leaves your device.
+  <main>
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,rgba(79,57,246,0.16),transparent_35%),radial-gradient(circle_at_85%_25%,rgba(148,163,184,0.22),transparent_40%),linear-gradient(to_bottom,white,rgba(248,250,252,0.96))]"></div>
+      <div class="relative mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 lg:px-8">
+        
+        <div class="space-y-8 reveal-hidden animate-on-scroll">
+          <p class="text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
+            <span class="lowercase">i8·e10 — </span>Personal Finance Ledger & Wealth Manager
           </p>
-
-          <div class="flex flex-wrap gap-4 pt-4">
-            <a href="https://i8e10.vercel.app"
-              class="px-8 py-4 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transform hover:-translate-y-1 flex items-center gap-3">
-              <span>Start Tracking Now</span>
-              <i class="fas fa-arrow-right text-sm"></i>
+          <div class="space-y-4">
+            <h1 class="max-w-xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+              The Private Daily Expenses App You Actually Own.
+            </h1>
+            <p class="max-w-lg text-lg leading-relaxed text-slate-600">
+              Take command of your personal finance with the 100% private, offline expense tracker. Your data stays in your browser—encrypted, untracked, and under your absolute control.
+            </p>
+          </div>
+          <div id="launch" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
+            <a href="https://i8e10.vercel.app" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-2xl shadow-indigo-300/40 transition hover:scale-105" style="background-color: #4f39f6;">
+              Launch App - No Sign-up Required
+              <i data-lucide="arrow-right" class="h-4 w-4"></i>
             </a>
-            <a href="#features"
-              class="px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-semibold transition-all duration-300 backdrop-blur-sm">
-              Explore Features
+            <a href="https://github.com/svijaykoushik/i8e10" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition hover:scale-105" style="border-color: #4f39f6; color: #4f39f6;">
+              <i class="fab fa-github"></i>
+              View on GitHub
             </a>
           </div>
-
-          <!-- Trust Badges -->
-          <div class="pt-8 flex items-center gap-8 text-gray-500 text-sm font-medium">
-            <div class="flex items-center gap-2">
-              <i class="fas fa-shield-alt text-brand-400"></i> No Sign-up
-            </div>
-            <div class="flex items-center gap-2">
-              <i class="fas fa-wifi-slash text-brand-400"></i> Offline First
-            </div>
-            <div class="flex items-center gap-2">
-              <i class="fas fa-file-csv text-brand-400"></i> CSV Export
-            </div>
-          </div>
         </div>
 
-        <div class="lg:w-1/2 relative flex items-center justify-center lg:justify-end">
-          <!-- Decorative Elements -->
-          <div
-            class="absolute inset-0 bg-gradient-to-tr from-brand-500/20 to-purple-500/20 rounded-full blur-3xl animate-pulse-slow">
-          </div>
-
-          <!-- Hero Screenshot -->
-          <div
-            class="relative w-full max-w-2xl rounded-[2rem] border border-white/10 shadow-2xl overflow-hidden glass-card p-3 animate-float">
-            <!-- Window Controls -->
-            <div class="flex gap-2 mb-3 pl-2">
-              <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
-              <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
-              <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
-            </div>
-
-            <img src="assets/images/screenshot_hero.png" alt="i8·e10 Dashboard Preview"
-              class="w-full h-auto rounded-xl object-cover opacity-95 hover:opacity-100 transition-opacity duration-500 shadow-inner">
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Value Proposition (Privacy) -->
-  <section id="privacy" class="py-24 bg-dark-card/50 relative overflow-hidden">
-    <div class="container mx-auto px-6 relative z-10">
-      <div class="text-center max-w-3xl mx-auto mb-20">
-        <h2 class="text-3xl lg:text-5xl font-bold mb-6">
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">The Power of
-            Privacy</span>
-        </h2>
-        <p class="text-gray-400 text-lg leading-relaxed">
-          In an era of data breaches, i8·e10 stands apart. We built a <strong>secure money tracker</strong> that
-          respects your privacy.
-          Your data is secured with industry-standard encryption. Only you hold the key.
-        </p>
-      </div>
-
-      <div class="grid md:grid-cols-3 gap-8">
-        <div class="glass-card p-8 rounded-3xl">
-          <div
-            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center mb-6 text-2xl text-white shadow-inner">
-            <i class="fas fa-user-secret"></i>
-          </div>
-          <h3 class="text-xl font-bold mb-4">No Accounts Required</h3>
-          <p class="text-gray-400 leading-relaxed">
-            Start using immediately without signing up. We don't want your email, phone number, or personal details.
-          </p>
-        </div>
-
-        <div class="glass-card p-8 rounded-3xl relative overflow-hidden group">
-          <div class="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div
-            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 flex items-center justify-center mb-6 text-2xl text-white shadow-lg shadow-brand-500/20">
-            <i class="fas fa-database"></i>
-          </div>
-          <h3 class="text-xl font-bold mb-4">Local-First Storage</h3>
-          <p class="text-gray-400 leading-relaxed">
-            Your financial life stays on your device. We have zero access to your data. It's truly <strong>private
-              finance management</strong>.
-          </p>
-        </div>
-
-        <div class="glass-card p-8 rounded-3xl">
-          <div
-            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center mb-6 text-2xl text-white shadow-inner">
-            <i class="fas fa-key"></i>
-          </div>
-          <h3 class="text-xl font-bold mb-4">12-Word Recovery</h3>
-          <p class="text-gray-400 leading-relaxed">
-            Bank-grade security for your locale device. Backup your data using a standard 12-word recovery seed phrase.
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Spreadsheet Evolution -->
-  <section id="excel-evolution" class="py-24 relative">
-    <div class="container mx-auto px-6">
-      <div class="flex flex-col lg:flex-row items-center gap-16">
-        <div class="lg:w-1/2 order-2 lg:order-1">
-          <!-- Screenshot for Bulk/Transactions -->
-          <div
-            class="glass-card rounded-[2rem] p-4 border border-white/10 overflow-hidden transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
-            <img src="assets/images/screenshot_bulk_import.png" alt="Transaction Management"
-              class="w-full h-auto rounded-xl opacity-90">
-          </div>
-        </div>
-
-        <div class="lg:w-1/2 order-1 lg:order-2 space-y-6">
-          <h2 class="text-3xl lg:text-5xl font-bold">
-            Move Beyond the <br>
-            <span class="text-gradient">Excel Sheet</span>
-          </h2>
-          <p class="text-gray-400 text-lg leading-relaxed">
-            Love the speed of typing in a spreadsheet? Our <strong>Bulk Add</strong> feature is designed for you.
-            Paste plain text, and our intelligent system categorizes it instantly.
-          </p>
-          <ul class="space-y-4 pt-4">
-            <li class="flex items-center gap-4">
-              <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                <i class="fas fa-check"></i>
+       <div class="relative hero-right-hidden animate-on-scroll">
+        <div class="max-w-4xl mx-auto p-4 bg-white rounded-xl shadow-lg border border-gray-100">
+          <div class="flex flex-col sm:flex-row gap-3 mb-4">
+            <div class="w-full sm:w-1/2 bg-gray-50/50 p-4 rounded-lg border border-gray-100 flex flex-col justify-between">
+              <div>
+                <div class="text-[10px] font-medium text-gray-500 uppercase flex items-baseline gap-1">
+                  <span>NET WORTH</span>
+                  <span class="text-[9px] font-normal opacity-70">/ நிகர மதிப்பு</span>
+                </div>
+                <div class="text-3xl font-black mt-1 text-gray-900 break-words">₹13,92,350</div>
               </div>
-              <span class="text-gray-300">Smart Text Recognition</span>
-            </li>
-            <li class="flex items-center gap-4">
-              <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                <i class="fas fa-check"></i>
+              <div class="text-[10px] text-gray-400 mt-2 sm:mt-0">Assets - Liabilities</div>
+            </div>
+            
+            <div class="w-full sm:w-1/2 bg-amber-50 p-3 rounded-lg border border-amber-100 flex gap-2">
+              <div class="flex-shrink-0 size-8 rounded-full bg-white flex items-center justify-center border border-amber-200">
+                <svg class="size-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
               </div>
-              <span class="text-gray-300">CSV Export & Import</span>
-            </li>
-            <li class="flex items-center gap-4">
-              <div class="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                <i class="fas fa-check"></i>
+              <div class="flex-grow space-y-1">
+                <div class="text-sm font-bold text-amber-700 flex flex-wrap items-baseline gap-1">
+                  <span>Warning</span>
+                  <span class="text-xs font-normal opacity-70">/ எச்சரிக்கை</span>
+                </div>
+                <div class="text-xs text-gray-700 leading-relaxed">
+                  Debt is becoming significant. Control your liabilities.
+                </div>
+                <div class="text-[9px] text-gray-500 flex flex-wrap items-center gap-1">
+                  <span class="font-bold text-gray-600">Ratio:</span> 
+                  <span>41% Debt</span>
+                  <span class="text-gray-300">•</span>
+                  <span class="font-bold text-gray-600">Flow:</span> 
+                  <span class="text-gray-900">Positive</span>
+                </div>
               </div>
-              <span class="text-gray-300">The ultimate <strong>expense manager excel alternative</strong></span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Name Etymology / Philosophy -->
-  <section id="philosophy" class="py-24 relative overflow-hidden">
-    <div class="container mx-auto px-6 text-center">
-      <div class="max-w-4xl mx-auto">
-        <h2 class="text-3xl lg:text-5xl font-bold mb-12">
-          🧐 What's in a <span class="text-gradient">name?</span>
-        </h2>
-
-        <div class="glass-card p-8 md:p-12 rounded-[2.5rem] relative">
-          <div
-            class="absolute -top-6 left-1/2 -translate-x-1/2 bg-brand-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg shadow-brand-500/30">
-            The Balance Equation
+            </div>
           </div>
 
-          <p class="text-xl text-gray-300 leading-relaxed mb-10">
-            The name <span class="font-bold text-white">i8·e10</span> is a modern contraction of <br
-              class="hidden md:block">
-            <span class="text-green-400 font-semibold">Income 8</span> and <span
-              class="text-red-400 font-semibold">Expense 10</span>.
-          </p>
+          <div class="bg-white p-4 rounded-lg border border-gray-100">
+            <div class="text-lg font-extrabold text-gray-950 mb-4">Balance Sheet Structure</div>
 
-          <div
-            class="grid md:grid-cols-2 gap-8 items-center bg-black/40 p-8 rounded-3xl border border-white/5 mb-10 text-left">
+            <div class="mb-4">
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="text-xs font-medium text-gray-700 flex items-baseline gap-1">
+                  <span>Total Assets</span>
+                  <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த சொத்துக்கள்</span>
+                </div>
+                <div class="text-base font-bold text-gray-900">₹23,67,350</div>
+              </div>
+              <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden">
+                <div class="h-full bg-blue-600" style="width: calc((1097350 / 2367350) * 100%)"></div>
+                <div class="h-full bg-cyan-500 ml-0.5" style="width: calc((40000 / 2367350) * 100%)"></div>
+                <div class="h-full bg-purple-600 ml-0.5" style="width: calc((1230000 / 2367350) * 100%)"></div>
+              </div>
+              <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
+                <div class="flex items-center gap-1">
+                  <span class="size-1.5 rounded-full bg-blue-600 shrink-0"></span>
+                  <span class="whitespace-nowrap">Cash <span class="text-gray-400 font-mono">(₹10,97,350)</span></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="size-1.5 rounded-full bg-cyan-500 shrink-0"></span>
+                  <span class="whitespace-nowrap">Lent <span class="text-gray-400 font-mono">(₹40,000)</span></span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="size-1.5 rounded-full bg-purple-600 shrink-0"></span>
+                  <span class="whitespace-nowrap">Inv. <span class="text-gray-400 font-mono">(₹12,30,000)</span></span>
+                </div>
+              </div>
+            </div>
+
             <div>
-              <p class="text-gray-400 text-sm uppercase tracking-widest mb-4 font-bold">The Inspiration</p>
-              <p class="text-2xl font-tamil text-white leading-relaxed">
-                வரவு எட்டணா,<br>
-                செலவு பத்தனா;<br>
-                அதிகம் இரண்டனா<br>
-                கடைசியில் துண்டனா
-              </p>
-            </div>
-            <div class="md:border-l md:border-white/10 md:pl-8 italic text-gray-400 leading-relaxed">
-              "Income is 8 annas, Expense is 10 annas; The extra 2 annas lead to a deficit in the end."
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="text-xs font-medium text-gray-700 flex items-baseline gap-1">
+                  <span>Total Liabilities</span>
+                  <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த பொறுப்புகள்</span>
+                </div>
+                <div class="text-base font-bold text-gray-900">₹9,75,000</div>
+              </div>
+              <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden relative">
+                <div class="absolute inset-y-0 left-0 h-full bg-amber-500" style="width: calc((975000 / 2367350) * 100%)"></div>
+              </div>
+              <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
+                <div class="flex items-center gap-1">
+                  <span class="size-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                  <span class="whitespace-nowrap">Debt <span class="text-gray-400 font-mono">(₹9,75,000)</span></span>
+                </div>
+              </div>
             </div>
           </div>
-
-          <p class="text-gray-400 max-w-2xl mx-auto italic">
-            i8·e10 serves as a tool to help you track that very balance and ensure your "expense" never overtakes your
-            "income."
-          </p>
         </div>
-      </div>
-    </div>
-  </section>
+       </div>
+    </section>
 
-  <!-- Bilingual / Tamil Section -->
-
-  <section class="py-24 bg-dark-card/30 relative">
-    <div class="container mx-auto px-6 text-center">
-      <div
-        class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-500/10 border border-orange-500/20 text-orange-400 text-xs font-bold uppercase tracking-wider mb-8">
-        Native Support
-      </div>
-
-      <h2 class="text-3xl lg:text-5xl font-bold mb-8">
-        English & <span class="text-orange-500 font-tamil">தமிழ்</span>
-      </h2>
-
-      <p class="text-xl text-gray-400 max-w-2xl mx-auto mb-12">
-        Manage your finances in the language you are most comfortable with.
-        A true <strong>money management tamil</strong> solution.
-      </p>
-
-      <div class="max-w-4xl mx-auto grid md:grid-cols-2 gap-6">
-        <div class="glass-card p-6 rounded-2xl border-l-4 border-l-brand-500 text-left">
-          <h3 class="text-lg font-bold text-white mb-2">Expense Tracker</h3>
-          <p class="text-gray-400">Intuitive interface for global users.</p>
-        </div>
-        <div class="glass-card p-6 rounded-2xl border-l-4 border-l-orange-500 text-left">
-          <h3 class="text-2xl font-bold text-white mb-2 font-tamil">வரவு செலவு கணக்கு</h3>
-          <p class="text-gray-400">Designed for Tamil speakers worldwide.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Features Grid -->
-  <section id="features" class="py-24">
-    <div class="container mx-auto px-6">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl lg:text-5xl font-bold mb-6">Everything You Need</h2>
-        <p class="text-gray-400 max-w-2xl mx-auto">
-          From debt tracking to investment portfolios, i8·e10 covers all aspects of personal finance.
+    <section id="features" class="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+      <div class="mb-10 space-y-3 reveal-hidden animate-on-scroll">
+        <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Features</h2>
+        <p class="max-w-2xl text-slate-600">
+          Built for ownership first. No account needed, no hidden sync layer, and no compromise on
+          local data durability.
         </p>
       </div>
 
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-hand-holding-usd text-3xl text-brand-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">Debt Management</h3>
-          <p class="text-gray-400 text-sm">
-            Track who owes you and whom you owe. Never lose track of lent money again.
-          </p>
+      <div class="grid gap-4 md:grid-cols-3">
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
+          <i data-lucide="download" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">100% Local & Private</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Your data stays entirely on your device. Work flawlessly without an internet connection and install to your home screen for a fast, tether-free experience.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
+          <i data-lucide="book-lock" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Zero-Server Encryption</h3>
+          <p class="text-sm leading-relaxed text-slate-600">We don't store your data because we can't see it. Everything is encrypted with bank-grade security directly in your browser, accessible only by your personal password.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
+          <i data-lucide="chart-bar" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Total Net Worth Insights</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Go beyond basic expense tracking. Monitor your entire financial ecosystem by managing assets and liabilities in one unified view.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
+          <i data-lucide="scale" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Swift Reconciliation</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Eliminate discrepancies instantly. Reconcile your physical cash or bank balances with your digital wallet in just a few taps.</p>
+        </article>
+        
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
+          <i data-lucide="shield-check" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Secure Self-Recovery</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Maintain total control with a 12-word recovery phrase. This unique key is the only way to restore access, ensuring your data remains yours alone.</p>
+          <div class="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50 p-3 font-mono text-xs text-slate-700">
+            mango velvet copper dune orbit mirror leaf pulse ember token lemon rain
+          </div>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
+          <i data-lucide="package" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Portable Data Exports</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Export your history into a single ZIP file containing organized CSVs. Perfect for personal records, external audits, or custom spreadsheets.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
+          <i data-lucide="languages" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Native Dual-Language</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Designed for bilingual clarity. Key insights and headings are provided in English and Tamil (தமிழ்) for immediate clarity.</p>
+          <div class="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-1 text-xs">
+            <span class="rounded-full bg-white px-3 py-1 text-slate-600 font-medium">NET WORTH / நிகர மதிப்பு</span>
+          </div>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
+          <i data-lucide="zap" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">High-Speed Entry</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Log routine expenses with a single tap. Use long-press shortcuts for advanced tracking of debts, investments, and complex transactions.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
+          <i data-lucide="bell" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Intelligent Reminders</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Stay proactive with automated backup alerts. We ensure you never lose progress, keeping your financial journey secure and up to date.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="excel-killer" class="border-y border-slate-200/70 bg-white/50 py-20">
+      <div class="@container mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-10 flex items-center gap-3 reveal-hidden animate-on-scroll">
+          <i data-lucide="sparkles" style="color: #4f39f6;" class="h-6 w-6"></i>
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">The Excel Killer Flow</h2>
         </div>
 
-        <!-- Feature 2 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-chart-pie text-3xl text-purple-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">Investment Portfolio</h3>
-          <p class="text-gray-400 text-sm">
-            Keep an eye on your assets and investments in one secure place.
-          </p>
-        </div>
+        <div class="grid gap-6 @lg:grid-cols-2">
+          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-left-hidden animate-on-scroll">
+            <p class="mb-4 text-sm font-semibold text-slate-700">Before: Spreadsheet Drift</p>
+            <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50 font-mono text-xs text-slate-500">
+              <div class="grid grid-cols-4 gap-px bg-slate-200/80">
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Food??</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">? 900</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Travel-ish</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+              </div>
+            </div>
+          </div>
 
-        <!-- Feature 3 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-balance-scale text-3xl text-yellow-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">Easy Reconcile</h3>
-          <p class="text-gray-400 text-sm">
-            One-click balance adjustment to match your physical wallet with the app.
-          </p>
-        </div>
-
-        <!-- Feature 4 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-mobile-screen text-3xl text-pink-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">PWA / Mobile First</h3>
-          <p class="text-gray-400 text-sm">
-            Install as an app on iOS and Android directly from the browser. No App Store needed.
-          </p>
-        </div>
-
-        <!-- Feature 5 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-moon text-3xl text-indigo-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">Dark Mode</h3>
-          <p class="text-gray-400 text-sm">
-            Beautifully designed dark interface that's easy on the eyes for late-night budgeting.
-          </p>
-        </div>
-
-        <!-- Feature 6 -->
-        <div class="glass-card p-8 rounded-3xl">
-          <i class="fas fa-bolt text-3xl text-red-400 mb-6"></i>
-          <h3 class="text-xl font-bold mb-3">Performance</h3>
-          <p class="text-gray-400 text-sm">
-            Lightning fast load times. Built with modern web technologies for instant access.
-          </p>
+          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-right-hidden animate-on-scroll">
+            <p class="mb-4 text-sm font-semibold text-slate-700">After: Parsed Ledger</p>
+            <div class="space-y-3">
+              <div class="rounded-xl border border-slate-200/70 bg-slate-50 p-3">
+                <label class="mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+                  <i data-lucide="sparkles" class="h-4 w-4" style="color: #4f39f6;"></i>
+                  Bulk Add Transactions
+                </label>
+                <textarea readonly class="h-20 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 font-mono text-xs text-slate-600 outline-none">milk 120
+petrol 1100
+salary 8000 income
+rent 5600
+ate vada today 50</textarea>
+              </div>
+              <div class="rounded-xl border border-slate-200/70 p-3 text-sm">
+                <div class="mb-1 flex items-center justify-between">
+                  <span class="font-semibold">5/5 Valid</span>
+                  <span class="inline-block px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200" style="background-color: #4f39f6;">
+                    Review
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
-  <footer class="border-t border-white/5 bg-dark-card/30 pt-16 pb-8">
+    <section class="bg-slate-950 py-20 text-slate-100">
+      <div class="mx-auto w-full max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <p class="mb-5 text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
+          The <span class="lowercase">i8·e10</span> Principle
+        </p>
+        <p class="text-balance text-3xl font-semibold leading-tight text-white sm:text-4xl">
+          வரவு எட்டணா, செலவு பத்தணா...
+        </p>
+        <p class="mx-auto mt-4 max-w-3xl text-lg text-slate-300">
+          <span class="font-mono">i</span> means income and <span class="font-mono">e</span> means expense. When expenses outrun income, the math turns against you. i8·e10
+          keeps this equation visible every day so better habits become default.
+        </p>
+        <div class="mx-auto mt-8 inline-flex items-center gap-3 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm">
+          <span class="font-mono text-indigo-200">i = 8</span>
+          <span class="text-slate-400">vs</span>
+          <span class="font-mono text-indigo-200">e = 10</span>
+        </div>
+      </div>
+    </section>
+  </main>
+  
+  <footer class="border-t border-dark/5 pt-16 pb-8">
     <div class="container mx-auto px-6">
       <div class="grid md:grid-cols-4 gap-12 mb-12">
         <div class="col-span-1 md:col-span-1">
           <a href="#" class="flex items-center gap-2 mb-6">
             <img src="assets/images/logo.png" alt="i8.e10 Logo"
               class="w-8 h-8 rounded-lg shadow-lg shadow-brand-500/20">
-            <span class="text-lg font-bold text-white">i8·e10</span>
+            <span class="text-lg font-bold">i8·e10</span>
           </a>
           <p class="text-gray-500 text-sm leading-relaxed">
             The secure, private, and offline <strong>daily expense tracker</strong>.
@@ -481,7 +396,7 @@
         </div>
 
         <div>
-          <h4 class="text-white font-bold mb-6">Legal</h4>
+          <h4 class="font-bold mb-6">Legal</h4>
           <ul class="space-y-4 text-sm text-gray-500">
             <li><a href="privacy.html" class="hover:text-brand-400 transition-colors">Privacy Policy</a></li>
             <li><a href="terms.html" class="hover:text-brand-400 transition-colors">Terms of Service</a></li>
@@ -490,25 +405,25 @@
         </div>
 
         <div>
-          <h4 class="text-white font-bold mb-6">Product</h4>
+          <h4 class="font-bold mb-6">Product</h4>
           <ul class="space-y-4 text-sm text-gray-500">
             <li><a href="#features" class="hover:text-brand-400 transition-colors">Features</a></li>
-            <li><a href="#excel-evolution" class="hover:text-brand-400 transition-colors">Bulk Import</a></li>
+            <li><a href="#excel-killer" class="hover:text-brand-400 transition-colors">Excel Killer</a></li>
             <li><a href="https://github.com/svijaykoushik/i8e10" class="hover:text-brand-400 transition-colors">Source
                 Code</a></li>
           </ul>
         </div>
 
         <div>
-          <h4 class="text-white font-bold mb-6">Connect</h4>
+          <h4 class="font-bold mb-6">Connect</h4>
           <div class="flex gap-4">
             <a href="https://github.com/svijaykoushik/i8e10"
-              class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
+              class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-dark transition-all">
               <i class="fab fa-github"></i>
             </a>
-            <a href="#"
-              class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition-all">
-              <i class="fab fa-twitter"></i>
+            <a href="https://instagram.com/geti8e10"
+              class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-dark transition-all">
+              <i class="fa-brands fa-instagram"></i>
             </a>
           </div>
         </div>
@@ -521,6 +436,43 @@
       </div>
     </div>
   </footer>
-</body>
 
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Intersection Observer to trigger Framer Motion equivalent animations
+    document.addEventListener("DOMContentLoaded", () => {
+      const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.2
+      };
+
+      const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            // Apply visibility classes based on the initial hidden state class
+            if (entry.target.classList.contains('reveal-hidden')) {
+              entry.target.classList.replace('reveal-hidden', 'reveal-visible');
+            } else if (entry.target.classList.contains('hero-right-hidden')) {
+              entry.target.classList.replace('hero-right-hidden', 'hero-right-visible');
+            } else if (entry.target.classList.contains('slide-left-hidden')) {
+              entry.target.classList.replace('slide-left-hidden', 'slide-left-visible');
+            } else if (entry.target.classList.contains('slide-right-hidden')) {
+              entry.target.classList.replace('slide-right-hidden', 'slide-right-visible');
+            }
+            // Ensure animation triggers only once (like viewport={{ once: true }})
+            observer.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      // Select all elements that need to animate on scroll
+      document.querySelectorAll('.animate-on-scroll').forEach(el => {
+        observer.observe(el);
+      });
+    });
+  </script>
+</body>
 </html>
