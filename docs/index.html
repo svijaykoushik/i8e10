@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>i8·e10 — Personal Finance Ledger & Wealth Manager</title>
+  <title>i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit</title>
   <meta name="description"
-    content="A secure, private, and offline personal finance tracker. Manage expenses, debts, and investments in English & Tamil. No accounts. No cloud. End-to-end encrypted." />
+    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
   <meta name="keywords"
     content="offline expense tracker, personal finance manager, private finance management, expense manager excel alternative, money management tamil, வரவு செலவு கணக்கு, secure money tracker" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -13,16 +13,16 @@
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="i8·e10 | Private & Offline Expense Tracker - வரவு செலவு கணக்கு" />
+  <meta property="og:title" content="i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit" />
   <meta property="og:description"
-    content="Take control of your money with a private, offline expense tracker. No accounts, no cloud. End-to-end encrypted." />
+    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
   <meta property="og:image" content="https://i8e10.vercel.app/og-image.png" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="i8·e10 | Private & Offline Expense Tracker - வரவு செலவு கணக்கு" />
+  <meta name="twitter:title" content="i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit" />
   <meta name="twitter:description"
-    content="Take control of your money with a private, offline expense tracker. No accounts, no cloud. End-to-end encrypted." />
+    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
   <meta name="twitter:image" content="https://i8e10.vercel.app/i8e10-og-image.png" />
   
   <script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
@@ -94,9 +94,12 @@
         <p class="text-base font-semibold tracking-tight">i8·e10</p>
       </div>
       <nav class="hidden items-center gap-6 text-sm text-slate-600 md:flex">
+        <a href="#why" class="transition hover:text-slate-900">Why</a>
         <a href="#features" class="transition hover:text-slate-900">Features</a>
-        <a href="#excel-killer" class="transition hover:text-slate-900">Excel Killer</a>
-        <a href="#specs" class="transition hover:text-slate-900">Specs</a>
+        <a href="#how-it-works" class="transition hover:text-slate-900">Bulk Import</a>
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">
+          <span>EN</span><span class="text-slate-300">/</span><span class="font-semibold" style="color:#4f39f6;">த</span>
+        </span>
       </nav>
       <a href="https://i8e10.vercel.app" class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:scale-105" style="background-color: #4f39f6;">
         Launch App
@@ -111,14 +114,14 @@
         
         <div class="space-y-8 reveal-hidden animate-on-scroll">
           <p class="text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
-            <span class="lowercase">i8·e10 — </span>Personal Finance Ledger & Wealth Manager
+            <span class="lowercase">i8·e10 — </span>Personal finance tracker
           </p>
           <div class="space-y-4">
             <h1 class="max-w-xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              The Private Daily Expenses App You Actually Own.
+              Income vs. Expense,<br>Finally Clear.
             </h1>
             <p class="max-w-lg text-lg leading-relaxed text-slate-600">
-              Take command of your personal finance with the 100% private, offline expense tracker. Your data stays in your browser—encrypted, untracked, and under your absolute control.
+              Most finance apps are either too rigid to use in a hurry, or too loose to keep you honest. I built this for myself — to log a quick cash expense before I forget it, and to stay gently accountable without the guilt.
             </p>
           </div>
           <div id="launch" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
@@ -142,7 +145,7 @@
                   <span>NET WORTH</span>
                   <span class="text-[9px] font-normal opacity-70">/ நிகர மதிப்பு</span>
                 </div>
-                <div class="text-3xl font-black mt-1 text-gray-900 break-words">₹13,92,350</div>
+                <div class="text-3xl font-black mt-1 text-gray-900 break-words">₹13,950</div>
               </div>
               <div class="text-[10px] text-gray-400 mt-2 sm:mt-0">Assets - Liabilities</div>
             </div>
@@ -163,7 +166,7 @@
                 </div>
                 <div class="text-[9px] text-gray-500 flex flex-wrap items-center gap-1">
                   <span class="font-bold text-gray-600">Ratio:</span> 
-                  <span>41% Debt</span>
+                  <span>47.06% Debt</span>
                   <span class="text-gray-300">•</span>
                   <span class="font-bold text-gray-600">Flow:</span> 
                   <span class="text-gray-900">Positive</span>
@@ -181,25 +184,25 @@
                   <span>Total Assets</span>
                   <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த சொத்துக்கள்</span>
                 </div>
-                <div class="text-base font-bold text-gray-900">₹23,67,350</div>
+                <div class="text-base font-bold text-gray-900">₹26,350</div>
               </div>
               <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden">
-                <div class="h-full bg-blue-600" style="width: calc((1097350 / 2367350) * 100%)"></div>
-                <div class="h-full bg-cyan-500 ml-0.5" style="width: calc((40000 / 2367350) * 100%)"></div>
-                <div class="h-full bg-purple-600 ml-0.5" style="width: calc((1230000 / 2367350) * 100%)"></div>
+                <div class="h-full bg-blue-600" style="width: calc((10950 / 26350) * 100%)"></div>
+                <div class="h-full bg-cyan-500 ml-0.5" style="width: calc((4000 / 26350) * 100%)"></div>
+                <div class="h-full bg-purple-600 ml-0.5" style="width: calc((12300 / 26350) * 100%)"></div>
               </div>
               <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
                 <div class="flex items-center gap-1">
                   <span class="size-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <span class="whitespace-nowrap">Cash <span class="text-gray-400 font-mono">(₹10,97,350)</span></span>
+                  <span class="whitespace-nowrap">Cash <span class="text-gray-400 font-mono">(₹10,950)</span></span>
                 </div>
                 <div class="flex items-center gap-1">
                   <span class="size-1.5 rounded-full bg-cyan-500 shrink-0"></span>
-                  <span class="whitespace-nowrap">Lent <span class="text-gray-400 font-mono">(₹40,000)</span></span>
+                  <span class="whitespace-nowrap">Lent <span class="text-gray-400 font-mono">(₹4000)</span></span>
                 </div>
                 <div class="flex items-center gap-1">
                   <span class="size-1.5 rounded-full bg-purple-600 shrink-0"></span>
-                  <span class="whitespace-nowrap">Inv. <span class="text-gray-400 font-mono">(₹12,30,000)</span></span>
+                  <span class="whitespace-nowrap">Inv. <span class="text-gray-400 font-mono">(₹12,300)</span></span>
                 </div>
               </div>
             </div>
@@ -210,15 +213,15 @@
                   <span>Total Liabilities</span>
                   <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த பொறுப்புகள்</span>
                 </div>
-                <div class="text-base font-bold text-gray-900">₹9,75,000</div>
+                <div class="text-base font-bold text-gray-900">₹12,400</div>
               </div>
               <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden relative">
-                <div class="absolute inset-y-0 left-0 h-full bg-amber-500" style="width: calc((975000 / 2367350) * 100%)"></div>
+                <div class="absolute inset-y-0 left-0 h-full bg-amber-500" style="width: calc((12400 / 26350) * 100%)"></div>
               </div>
               <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
                 <div class="flex items-center gap-1">
                   <span class="size-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                  <span class="whitespace-nowrap">Debt <span class="text-gray-400 font-mono">(₹9,75,000)</span></span>
+                  <span class="whitespace-nowrap">Debt <span class="text-gray-400 font-mono">(₹12,400)</span></span>
                 </div>
               </div>
             </div>
@@ -227,83 +230,84 @@
        </div>
     </section>
 
-    <section id="features" class="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mb-10 space-y-3 reveal-hidden animate-on-scroll">
-        <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Features</h2>
-        <p class="max-w-2xl text-slate-600">
-          Built for ownership first. No account needed, no hidden sync layer, and no compromise on
-          local data durability.
+    <!-- Philosophy — leads with the WHY -->
+    <section id="why" class="bg-slate-950 py-20 text-slate-100">
+      <div class="mx-auto w-full max-w-5xl px-4 text-center sm:px-6 lg:px-8">
+        <p class="mb-5 text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
+          The Philosophy
         </p>
-      </div>
-
-      <div class="grid gap-4 md:grid-cols-3">
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
-          <i data-lucide="download" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">100% Local & Private</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Your data stays entirely on your device. Work flawlessly without an internet connection and install to your home screen for a fast, tether-free experience.</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
-          <i data-lucide="book-lock" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Zero-Server Storage</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Your data never leaves your device. Everything is encrypted and stored locally in your browser, accessible only with your password.</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
-          <i data-lucide="chart-bar" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Total Net Worth Insights</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Go beyond basic expense tracking. Monitor your entire financial ecosystem by managing assets and liabilities in one unified view.</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
-          <i data-lucide="scale" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Swift Reconciliation</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Eliminate discrepancies instantly. Reconcile your physical cash or bank balances with your digital wallet in just a few taps.</p>
-        </article>
-        
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
-          <i data-lucide="shield-check" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Secure Self-Recovery</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Maintain total control with a 12-word recovery phrase. This unique key is the only way to restore access, ensuring your data remains yours alone.</p>
-          <div class="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50 p-3 font-mono text-xs text-slate-700">
-            mango velvet copper dune orbit mirror leaf pulse ember token lemon rain
-          </div>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
-          <i data-lucide="package" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Portable Data Exports</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Export your history into a single ZIP file containing organized CSVs. Perfect for personal records, external audits, or custom spreadsheets.</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
-          <i data-lucide="languages" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Native Dual-Language</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Designed for bilingual clarity. Key insights and headings are provided in English and Tamil (தமிழ்) for immediate clarity.</p>
-          <div class="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-1 text-xs">
-            <span class="rounded-full bg-white px-3 py-1 text-slate-600 font-medium">NET WORTH / நிகர மதிப்பு</span>
-          </div>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
-          <i data-lucide="zap" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">High-Speed Entry</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Log routine expenses with a single tap. Use long-press shortcuts for advanced tracking of debts, investments, and complex transactions.</p>
-        </article>
-
-        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
-          <i data-lucide="bell" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Intelligent Reminders</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Stay proactive with automated backup alerts. We ensure you never lose progress, keeping your financial journey secure and up to date.</p>
-        </article>
+        <p class="text-balance text-3xl font-semibold leading-tight text-white sm:text-4xl">
+          வரவு எட்டணா, செலவு பத்தணா...
+        </p>
+        <p class="mx-auto mt-4 max-w-3xl text-base text-slate-400 leading-relaxed italic">
+          "Income is 8 annas, Expense is 10 annas; The extra 2 annas lead to a deficit in the end."
+        </p>
+        <p class="mx-auto mt-6 max-w-3xl text-lg text-slate-300 leading-relaxed">
+          The name is a translated contraction of an old Tamil song. The <span class="font-mono text-indigo-300">i</span> is for Income, the <span class="font-mono text-indigo-300">e</span> is for Expense — and this app is built so the former always stays ahead of the latter.
+        </p>
+        <div class="mx-auto mt-8 inline-flex items-center gap-3 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm">
+          <span class="font-mono text-indigo-200">i = 8</span>
+          <span class="text-slate-400">vs</span>
+          <span class="font-mono text-indigo-200">e = 10</span>
+        </div>
       </div>
     </section>
 
-    <section id="excel-killer" class="border-y border-slate-200/70 bg-white/50 py-20">
+    <!-- Features — 3 Pain-Killer Pillars + 1 Infrastructure card -->
+    <section id="features" class="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
+      <div class="mb-10 space-y-3 reveal-hidden animate-on-scroll">
+        <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Built to solve real problems.</h2>
+        <p class="max-w-2xl text-slate-600">
+          No backend, no cloud, no account required. Everything runs on your device — and every feature exists because I hit the problem myself.
+        </p>
+      </div>
+
+      <!-- 3 Pain-Killer Pillars -->
+      <div class="grid gap-4 md:grid-cols-3 mb-4">
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 0ms; transition-duration: 0.45s;">
+          <i data-lucide="zap" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Log in 3 Seconds</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Paid ₹250 cash for petrol? Open the app, log it, done — before you even put your wallet away. Three taps, no forms, no categories to fight with.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
+          <i data-lucide="users" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Family Money, Not Forgotten</h3>
+          <p class="text-sm leading-relaxed text-slate-600">"Ravi owes me ₹200" shouldn't live rent-free in your head. Track what you lent, what you owe, and your investments — without a separate app or a sticky note.</p>
+        </article>
+
+        <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
+          <i data-lucide="scale" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Fix Mistakes Without Shame</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Forgot to log something for three days? Just reconcile. Adjust your balance to match reality and move forward — the app meets you where you are, not where you should have been.</p>
+        </article>
+      </div>
+
+      <!-- Secondary Infrastructure Card -->
+      <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-duration: 0.45s;">
+        <div class="flex flex-col sm:flex-row sm:items-start gap-6">
+          <div class="flex-shrink-0">
+            <i data-lucide="shield" class="h-6 w-6" style="color: #4f39f6;"></i>
+          </div>
+          <div class="flex-grow">
+            <h3 class="mb-2 text-lg font-semibold text-slate-900">Works Without Internet. Stays Forever.</h3>
+            <p class="text-sm leading-relaxed text-slate-600 max-w-3xl">
+              Install it once and it works completely offline — on a flight, in a village, anywhere. Your data is secured with a 12-word phrase that only you hold. Keep it safe, and you keep everything. Smart reminders nudge you to download a clean backup zip whenever it's time.
+            </p>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <span class="text-xs text-slate-400">Clean CSV files · No proprietary formats · Your data, always.</span>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <!-- Bulk Import -->
+    <section id="how-it-works" class="border-y border-slate-200/70 bg-white/50 py-20">
       <div class="@container mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
         <div class="mb-10 flex items-center gap-3 reveal-hidden animate-on-scroll">
           <i data-lucide="sparkles" style="color: #4f39f6;" class="h-6 w-6"></i>
-          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">The Excel Killer Flow</h2>
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Bulk Import, Not Busywork</h2>
         </div>
 
         <div class="grid gap-6 @lg:grid-cols-2">
@@ -339,11 +343,10 @@
                   <i data-lucide="sparkles" class="h-4 w-4" style="color: #4f39f6;"></i>
                   Bulk Add Transactions
                 </label>
-                <textarea readonly class="h-20 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 font-mono text-xs text-slate-600 outline-none">milk 120
-petrol 1100
+                <textarea readonly class="h-24 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 font-mono text-sm text-slate-600 outline-none">milk 120
+petrol 1100 yesterday
 salary 8000 income
-rent 5600
-ate vada today 50</textarea>
+rent 5600 today</textarea>
               </div>
               <div class="rounded-xl border border-slate-200/70 p-3 text-sm">
                 <div class="mb-1 flex items-center justify-between">
@@ -355,26 +358,6 @@ ate vada today 50</textarea>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="bg-slate-950 py-20 text-slate-100">
-      <div class="mx-auto w-full max-w-5xl px-4 text-center sm:px-6 lg:px-8">
-        <p class="mb-5 text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
-          The <span class="lowercase">i8·e10</span> Principle
-        </p>
-        <p class="text-balance text-3xl font-semibold leading-tight text-white sm:text-4xl">
-          வரவு எட்டணா, செலவு பத்தணா...
-        </p>
-        <p class="mx-auto mt-4 max-w-3xl text-lg text-slate-300">
-          <span class="font-mono">i</span> means income and <span class="font-mono">e</span> means expense. When expenses outrun income, the math turns against you. i8·e10
-          keeps this equation visible every day so better habits become default.
-        </p>
-        <div class="mx-auto mt-8 inline-flex items-center gap-3 rounded-full border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm">
-          <span class="font-mono text-indigo-200">i = 8</span>
-          <span class="text-slate-400">vs</span>
-          <span class="font-mono text-indigo-200">e = 10</span>
         </div>
       </div>
     </section>
@@ -407,8 +390,8 @@ ate vada today 50</textarea>
         <div>
           <h4 class="font-bold mb-6">Product</h4>
           <ul class="space-y-4 text-sm text-gray-500">
+            <li><a href="#why" class="hover:text-brand-400 transition-colors">Philosophy</a></li>
             <li><a href="#features" class="hover:text-brand-400 transition-colors">Features</a></li>
-            <li><a href="#excel-killer" class="hover:text-brand-400 transition-colors">Excel Killer</a></li>
             <li><a href="https://github.com/svijaykoushik/i8e10" class="hover:text-brand-400 transition-colors">Source
                 Code</a></li>
           </ul>
