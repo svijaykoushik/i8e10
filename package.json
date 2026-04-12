@@ -1,7 +1,7 @@
 {
   "name": "i8e10",
   "license": "AGPL-3.0-only",
-  "version": "1.0.4",
+  "version": "1.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
