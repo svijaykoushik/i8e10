@@ -778,6 +778,9 @@ const App: FC = () => {
         setInitialTransactionType(TransactionType.EXPENSE);
         setIsFormModalOpen(true);
         break;
+      case ActionType.BULK_TRANSACTION:
+        setIsBulkAddModalOpen(true);
+        break;
       case ActionType.DEBT:
         setEditingDebt(null);
         setInitialDebtType(DebtType.LENT);

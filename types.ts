@@ -83,7 +83,8 @@ export interface InvestmentTransaction {
 export enum ActionType {
     TRANSACTION = 'transaction',
     DEBT = 'debt',
-    INVESTMENT = 'investment'
+    INVESTMENT = 'investment',
+    BULK_TRANSACTION = 'bulk_transaction'
 }
 
 
