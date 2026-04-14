@@ -29,7 +29,7 @@ def draw_checkmark(draw, x, y, size, color, width=4):
 def create_og_image():
     # 1. Setup Canvas (1200x630)
     width, height = 1200, 630
-    bg_color = (15, 23, 42)  # Slate-900
+    bg_color = (242, 239, 255)
     img = Image.new("RGB", (width, height), bg_color)
     draw = ImageDraw.Draw(img)
 
@@ -57,17 +57,16 @@ def create_og_image():
     # Title "i8·e10"
     text_x = logo_x
     text_y = logo_y + logo_size + 30
-    draw.text((text_x, text_y), "i8·e10", font=font_title, fill=(255, 255, 255))
+    draw.text((text_x, text_y), "i8·e10", font=font_title, fill=(79, 57, 246))
 
     # Tagline
     tagline_y = text_y + 110
     draw.text(
         (text_x, tagline_y),
-        "Offline Expense Tracker",
+        "Offline Finance Tracker",
         font=font_subtitle,
-        fill=(148, 163, 184),
-    )  # Slate-400
-
+        fill=(2, 6, 3),
+    )  # Slate-900
     # --- SEPARATOR ---
     # Move separator further right to prevent overlap with Tagline
     separator_x = 550
@@ -77,10 +76,10 @@ def create_og_image():
 
     # --- RIGHT SIDE CONTENT ---
     features = [
-        "Offline First",
-        "100% Private (Local DB)",
-        "Zero Ads / No Tracking",
-        "Expense & Debt Tracking",
+        "Log in 3 Seconds",
+        "Family Money, Not Forgotten",
+        "Fix Mistakes Without Shame",
+        "Works Without Internet",
     ]
 
     # Move features start further right
@@ -93,13 +92,13 @@ def create_og_image():
 
         # Draw Checkmark manually
         check_size = 30
-        check_color = (52, 211, 153)  # emerald-400
+        check_color = (79, 57, 246)  # brand purple
         # Vertically align checkmark with text
         # Approx centering based on font size 34
         draw_checkmark(draw, start_x, y + 5, check_size, check_color, width=5)
 
         # Feature text
-        text_color = (226, 232, 240)  # Slate-200
+        text_color = (71, 85, 105)  # Slate-600
         # Offset text by check width + padding
         draw.text((start_x + 60, y), feature, font=font_feature, fill=text_color)
 

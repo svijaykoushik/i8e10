@@ -337,6 +337,14 @@ const SettingsModal: FC<SettingsModalProps> = ({
             GitHub
           </a>
         </div>
+        <div className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400 flex justify-center items-center gap-1">
+          <a href="https://svijaykoushik.github.io/i8e10/privacy.html" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600 flex items-center gap-1">
+            Privacy Policy
+          </a>{' '}•{' '}
+          <a href="https://svijaykoushik.github.io/i8e10/terms.html" target="_blank" rel="noopener noreferrer" className="underline hover:text-indigo-600 flex items-center gap-1">
+            Terms of Service
+          </a>
+        </div>
 
       </div>
     </Modal>

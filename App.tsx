@@ -39,6 +39,7 @@ import AlertModal from './components/ui/AlertModal';
 import UpdateInvestmentValueModal from './components/UpdateInvestmentValueModal';
 import { useInstallPrompt } from './hooks/useInstallPrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
+import OfflineReadySnackbar from './components/OfflineReadySnackbar';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
@@ -264,7 +265,7 @@ const App: FC = () => {
   // A2HS Install Banner — only start engagement timer after unlock + onboarding
   const installPromptReady = appStatus === 'UNLOCKED' && !!onboardingCompleted;
   const { showBanner: showInstallBanner, onInstall: handleInstallApp, onDismiss: handleDismissInstall } = useInstallPrompt(installPromptReady);
-  const { showBanner: showUpdateBanner, onUpdate: handleUpdateApp, onDismiss: handleDismissUpdate } = useUpdatePrompt();
+  const { showBanner: showUpdateBanner, showOfflineReady, onUpdate: handleUpdateApp, onDismiss: handleDismissUpdate, onDismissOfflineReady } = useUpdatePrompt();
   
   // Modal states
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -776,6 +777,9 @@ const App: FC = () => {
         setEditingTransaction(null);
         setInitialTransactionType(TransactionType.EXPENSE);
         setIsFormModalOpen(true);
+        break;
+      case ActionType.BULK_TRANSACTION:
+        setIsBulkAddModalOpen(true);
         break;
       case ActionType.DEBT:
         setEditingDebt(null);
@@ -2056,7 +2060,7 @@ const App: FC = () => {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">i8·e10</h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">வரவு செலவு கணக்கு | Personal Finance Tracker</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">வரவு செலவு கணக்கு & செல்வ மேலாண்மை | Personal Finance Ledger & Wealth Manager</p>
           </div>
           <div className="flex items-center">
             <button
@@ -2395,6 +2399,8 @@ const App: FC = () => {
       {showUpdateBanner && (
         <UpdateAvailableBanner onUpdate={handleUpdateApp} onDismiss={handleDismissUpdate} />
       )}
+
+      <OfflineReadySnackbar show={showOfflineReady} onDismiss={onDismissOfflineReady} />
     </div>
   );
 };
