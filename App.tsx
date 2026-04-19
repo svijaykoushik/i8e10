@@ -1067,28 +1067,12 @@ const App: FC = () => {
         });
     } else { // Add mode
         
-        await db.transaction('rw', db.debts, db.transactionItems, db.settings, async () => {
+        await db.transaction('rw', db.debts, db.settings, async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
             const newDebt: Debt = { ...debtData, id: crypto.randomUUID(), status: DebtStatus.OUTSTANDING };
             await db.debts.add(newDebt);
-
-            if (createTransaction) {
-                const newTransaction: Transaction = {
-                    id: crypto.randomUUID(),
-                    type: debtData.type === DebtType.LENT ? TransactionType.EXPENSE : TransactionType.INCOME,
-                    amount: debtData.amount,
-                    date: debtData.date,
-                    description: debtData.type === DebtType.LENT
-                        ? `Loan to ${debtData.person}`
-                        : `Loan from ${debtData.person}`,
-                    wallet: wallet,
-                    debtId: newDebt.id,
-                    isReconciliation: false,
-                };
-                await db.transactionItems.add(newTransaction);
-            }
 
             // Create debt account + double-entry transaction
             try {
@@ -1308,20 +1292,7 @@ const App: FC = () => {
                     amount: contributionAmount,
                 };
                 await db.investmentTransactions.add(investmentTx);
-                
-                if (createTransaction && wallet) {
-                    const newTransaction: Transaction = {
-                        id: crypto.randomUUID(),
-                        type: TransactionType.EXPENSE,
-                        amount: contributionAmount,
-                        date: investmentData.startDate,
-                        description: `Investment: ${investmentData.name}`,
-                        wallet: wallet,
-                        investmentTransactionId: investmentTx.id,
-                        isReconciliation: false,
-                    };
-                    await db.transactionItems.add(newTransaction);
-                }
+
 
                 // Also write to double-entry
                 if (createTransaction && wallet) {
