@@ -50,7 +50,7 @@ export class CustomDatabase implements DatabaseLike{
     if (this.db) return;
 
     return new Promise((resolve, reject) => {
-      const request = indexedDB.open("i8e10DB", 2);
+      const request = indexedDB.open("i8e10DB", 3);
 
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
@@ -100,6 +100,21 @@ export class CustomDatabase implements DatabaseLike{
           },
           // Settings uses 'key' as the primary key
           settings: { keyPath: "key", indexes: [] },
+          // --- Double-Entry Accounting (v3) ---
+          accounts: {
+            keyPath: "id",
+            indexes: ["type", "subtype", "isActive"],
+          },
+          transactions_v2: {
+            keyPath: "id",
+            indexes: [
+              "date",
+              "meta.kind",
+              "meta.debtId",
+              "meta.investmentId",
+              "meta.transferId",
+            ],
+          },
         };
 
         // keep specs for later lookup
@@ -115,6 +130,11 @@ export class CustomDatabase implements DatabaseLike{
                 store.createIndex(indexName, indexName);
               }
             });
+
+            // Add multiEntry index for entryAccountIds on transactions_v2
+            if (storeName === 'transactions_v2') {
+              store.createIndex('entryAccountIds', 'entryAccountIds', { multiEntry: true });
+            }
           }
         });
       };

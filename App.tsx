@@ -43,10 +43,18 @@ import OfflineReadySnackbar from './components/OfflineReadySnackbar';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
-import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV } from './utils/csvExporter';
-import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV } from './utils/csvImporter';
+import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV, generateAccountsCSV, generateDoubleEntryTransactionsCSV } from './utils/csvExporter';
+import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseAccountsCSV, parseDoubleEntryTransactionsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
+import { isMigrationComplete, runMigrationV3 } from './utils/migrationV3';
+import * as accountingAdapter from './utils/accountingAdapter';
+import * as accountManager from './utils/accountManager';
+import { computeWalletBalance, computeTotalWalletBalance } from './utils/balanceCalculator';
+import { presentAllForUI, type PresentedTransaction } from './utils/transactionPresenter';
+import type { DoubleEntryTransaction } from './src/db/doubleEntryTypes';
+import type { Account } from './src/db/accounts';
+import { walletAccountId } from './src/db/accounts';
 
 // --- Recovery Modals (Inlined to avoid new files) ---
 
@@ -162,6 +170,8 @@ type ImportResultSummary = {
     debtInst: { added: number; updated: number }
     inv: { added: number; updated: number };
     invTx: { added: number; updated: number };
+    acc: { added: number; updated: number };
+    doubleTx: { added: number; updated: number };
 };
 
 const getLocalDateString = () => {
@@ -172,7 +182,7 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-type AppStatus = 'LOADING' | 'LOCKED' | 'SETUP_REQUIRED' | 'UNLOCKED' | 'MIGRATING';
+type AppStatus = 'LOADING' | 'LOCKED' | 'SETUP_REQUIRED' | 'MIGRATION_REQUIRED' | 'UNLOCKED' | 'MIGRATING';
 
 const FullScreenLoader: FC<{ message: string }> = ({ message }) => (
     <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex flex-col justify-center items-center z-50">
@@ -237,6 +247,66 @@ const App: FC = () => {
     return () => sub.unsubscribe();
   }, []);
 
+  // --- Double-Entry Data (v3) ---
+  const [doubleEntryTxns, setDoubleEntryTxns] = useState<DoubleEntryTransaction[] | undefined>();
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+    const sub = liveQuery(async () => {
+      return db.transactions_v2.orderBy('date').reverse().toArray();
+    }).subscribe((val: DoubleEntryTransaction[]) => setDoubleEntryTxns(val));
+    return () => sub.unsubscribe();
+  }, [appStatus]);
+
+  const [allAccounts, setAllAccounts] = useState<Account[] | undefined>();
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+    const sub = liveQuery(async () => {
+      return db.accounts.toArray();
+    }).subscribe((val: Account[]) => setAllAccounts(val));
+    return () => sub.unsubscribe();
+  }, [appStatus]);
+
+  const accountMap = useMemo(() => {
+    const map = new Map<string, Account>();
+    if (allAccounts) {
+      for (const acc of allAccounts) {
+        map.set(acc.id, acc);
+      }
+    }
+    return map;
+  }, [allAccounts]);
+
+  const walletAccounts = useMemo(() => {
+    if (!allAccounts) return [];
+    return allAccounts.filter(a => a.subtype === 'wallet' && a.isActive);
+  }, [allAccounts]);
+
+  const walletNames = useMemo(() => walletAccounts.map(w => w.name), [walletAccounts]);
+
+  // Presented transactions (legacy format for existing UI components)
+  const presentedTransactions = useMemo(() => {
+    if (!doubleEntryTxns) return undefined;
+    return presentAllForUI(doubleEntryTxns, accountMap);
+  }, [doubleEntryTxns, accountMap]);
+
+  // --- Migration State ---
+  const [migrationProgress, setMigrationProgress] = useState<string>('');
+  const [migrationBackupDone, setMigrationBackupDone] = useState(false);
+
+  const handleRunMigration = async () => {
+    setAppStatus('MIGRATING');
+    try {
+      await runMigrationV3((step, detail) => {
+        setMigrationProgress(`${step}: ${detail}`);
+      });
+      setAppStatus('UNLOCKED');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      setMigrationProgress(`Error: ${error}`);
+      setAppStatus('MIGRATION_REQUIRED');
+    }
+  };
+
   const settings = useMemo(() => {
     const settingsMap: { [key: string]: any } = {};
     if (settingsArray) {
@@ -245,16 +315,16 @@ const App: FC = () => {
         }
     }
     return {
-        wallets: (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
+        wallets: walletNames.length > 0 ? walletNames : (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
         onboardingCompleted: settingsMap.onboardingCompleted ?? false,
         defaultFilterPeriod: settingsMap.defaultFilterPeriod ?? FilterPeriod.THIS_MONTH,
-        defaultWallet: settingsMap.defaultWallet ?? 'Cash / ரொக்கம்',
+        defaultWallet: settingsMap.defaultWallet ?? (walletAccounts.length > 0 ? walletAccounts[0].id : 'Cash / ரொக்கம்'),
         lastBackupDate: settingsMap.lastBackupDate ?? null,
         backupReminderDismissedUntil: settingsMap.backupReminderDismissedUntil ?? null,
         appFirstUseDate: settingsMap.appFirstUseDate ?? null,
         deficitThreshold: settingsMap.deficitThreshold ?? 1000,
     };
-  }, [settingsArray]);
+  }, [settingsArray, walletNames, walletAccounts]);
   
   const { wallets, onboardingCompleted, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
 
@@ -602,7 +672,13 @@ const App: FC = () => {
       
       try {
           await cryptoService.verifyPasswordAndGetKey(password, salt, wrappedMasterKey, verifier);
-          setAppStatus('UNLOCKED');
+          // Check if double-entry migration is needed
+          const migrated = await isMigrationComplete();
+          if (!migrated) {
+            setAppStatus('MIGRATION_REQUIRED');
+          } else {
+            setAppStatus('UNLOCKED');
+          }
           return true;
       } catch (error) {
           console.error("Unlock failed:", error);
@@ -696,20 +772,47 @@ const App: FC = () => {
   
   const handleSaveSettings = async (
     newDefaultPeriod: FilterPeriod,
-    newWallets: string[],
-    newDefaultWallet: string,
+    walletUpdates: { added: string[], renamed: { id: string, newName: string }[], removed: string[] },
+    newDefaultWalletId: string,
     newDeficitThreshold: number
   ) => {
+    // Process wallet additions
+    for (const name of walletUpdates.added) {
+      try { await accountManager.addWallet(name); } catch (e) { console.error('Failed to add wallet:', e); }
+    }
+    
+    // Process wallet renames
+    for (const { id, newName } of walletUpdates.renamed) {
+      try { await accountManager.renameWallet(id, newName); } catch (e) { console.error('Failed to rename wallet:', e); }
+    }
+
+    // Process wallet removals
+    for (const id of walletUpdates.removed) {
+      try { await accountManager.removeWallet(id); } catch (e) { console.error('Failed to remove wallet:', e); }
+    }
+
+    // Also update legacy wallets array for backward compatibility
+    const newWallets = walletAccounts
+      .filter(w => !walletUpdates.removed.includes(w.id))
+      .map(w => {
+        const renamed = walletUpdates.renamed.find(r => r.id === w.id);
+        return renamed ? renamed.newName : w.name;
+      })
+      .concat(walletUpdates.added);
+
+    // Resolve defaultWallet to account ID
+    const resolvedDefaultWallet = newDefaultWalletId;
+
     await db.settings.bulkPut([
       { key: "defaultFilterPeriod", value: newDefaultPeriod },
       { key: "wallets", value: newWallets },
-      { key: "defaultWallet", value: newDefaultWallet },
+      { key: "defaultWallet", value: resolvedDefaultWallet },
       { key: "deficitThreshold", value: newDeficitThreshold },
     ]);
     setFilter((prev) => ({
       ...prev,
       period: newDefaultPeriod,
-      wallet: newDefaultWallet,
+      wallet: resolvedDefaultWallet,
     }));
     setIsSettingsModalOpen(false);
   };
@@ -864,21 +967,50 @@ const App: FC = () => {
     setIsSellInvestmentModalOpen(true);
   };
 
+  const resolveWalletAccId = (walletName?: string): string => {
+    if (!walletName) return walletAccounts[0]?.id ?? 'acc_wallet_cash';
+    const acc = walletAccounts.find(w => w.name === walletName);
+    return acc?.id ?? walletAccountId(walletName);
+  };
+
   const handleSaveTransaction = async (data: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'> & { id?: string }) => {
     try {
-      await db.transaction('rw', db.transactionItems, db.settings, async () => {
-          if (data.id) { // Edit mode
-              const txToUpdate = await db.transactionItems.get(data.id);
-              if (txToUpdate) {
-                  await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
-              }
-          } else { // Add mode
-              if (!appFirstUseDate) {
-                  await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-              }
-              await db.transactionItems.add({ ...data, id: crypto.randomUUID(), isReconciliation: false });
+      if (data.id) { // Edit mode — update both legacy and v2
+        const existingV2 = await db.transactions_v2.get(data.id);
+        if (existingV2) {
+          // Update the double-entry transaction
+          const wAccId = resolveWalletAccId(data.wallet);
+          const isIncome = data.type === TransactionType.INCOME;
+          existingV2.date = data.date;
+          existingV2.note = data.description;
+          existingV2.entries = isIncome
+            ? [
+                { accountId: wAccId, type: 'debit', amount: data.amount },
+                { accountId: 'acc_income', type: 'credit', amount: data.amount },
+              ]
+            : [
+                { accountId: 'acc_expense', type: 'debit', amount: data.amount },
+                { accountId: wAccId, type: 'credit', amount: data.amount },
+              ];
+          await accountingAdapter.updateTransaction(existingV2);
+        } else {
+          // Fallback: update legacy store
+          const txToUpdate = await db.transactionItems.get(data.id);
+          if (txToUpdate) {
+            await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
           }
-    });
+        }
+      } else { // Add mode — write to v2
+        if (!appFirstUseDate) {
+          await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+        }
+        const wAccId = resolveWalletAccId(data.wallet);
+        if (data.type === TransactionType.INCOME) {
+          await accountingAdapter.recordIncome({ amount: data.amount, date: data.date, description: data.description, walletAccountId: wAccId });
+        } else {
+          await accountingAdapter.recordExpense({ amount: data.amount, date: data.date, description: data.description, walletAccountId: wAccId });
+        }
+      }
     closeAllModals();
   }catch(e){
     console.log("Failed to save transaction",e)
@@ -886,57 +1018,34 @@ const App: FC = () => {
   };
 
   const handleBulkAddTransactions = async (newTransactions: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'>[]) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        const fullTransactions = newTransactions.map(tx => ({
-            ...tx,
-            id: crypto.randomUUID(),
-            isReconciliation: false,
-        }));
-        if (fullTransactions.length > 0) {
-            await db.transactionItems.bulkAdd(fullTransactions);
-        }
-    });
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
+    for (const tx of newTransactions) {
+      const wAccId = resolveWalletAccId(tx.wallet);
+      if (tx.type === TransactionType.INCOME) {
+        await accountingAdapter.recordIncome({ amount: tx.amount, date: tx.date, description: tx.description, walletAccountId: wAccId });
+      } else {
+        await accountingAdapter.recordExpense({ amount: tx.amount, date: tx.date, description: tx.description, walletAccountId: wAccId });
+      }
+    }
     setFilter(prev => ({ ...prev, period: FilterPeriod.ALL }));
     closeAllModals();
   };
   
   const handleSaveTransfer = async (data: { amount: number; date: string; fromWallet: string; toWallet: string; description: string }) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        const transferId = crypto.randomUUID();
-        const { amount, date, fromWallet, toWallet, description } = data;
-
-        const expenseDesc = `Transfer to ${toWallet}${description ? ` (${description})` : ''}`;
-        const incomeDesc = `Transfer from ${fromWallet}${description ? ` (${description})` : ''}`;
-
-        const expenseTransaction: Transaction = {
-            id: crypto.randomUUID(),
-            type: TransactionType.EXPENSE,
-            amount,
-            date,
-            wallet: fromWallet,
-            description: expenseDesc,
-            isReconciliation: false,
-            transferId,
-        };
-
-        const incomeTransaction: Transaction = {
-            id: crypto.randomUUID(),
-            type: TransactionType.INCOME,
-            amount,
-            date,
-            wallet: toWallet,
-            description: incomeDesc,
-            isReconciliation: false,
-            transferId,
-        };
-        
-        await db.transactionItems.bulkAdd([expenseTransaction, incomeTransaction]);
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
+    const fromAccId = resolveWalletAccId(data.fromWallet);
+    const toAccId = resolveWalletAccId(data.toWallet);
+    const desc = `Transfer: ${data.fromWallet} → ${data.toWallet}${data.description ? ` (${data.description})` : ''}`;
+    await accountingAdapter.recordTransfer({
+      amount: data.amount,
+      date: data.date,
+      fromWalletAccountId: fromAccId,
+      toWalletAccountId: toAccId,
+      description: desc,
     });
     closeAllModals();
   };
@@ -979,6 +1088,26 @@ const App: FC = () => {
                 };
                 await db.transactionItems.add(newTransaction);
             }
+
+            // Create debt account + double-entry transaction
+            try {
+              const dType = debtData.type === DebtType.OWED ? 'owed' : 'lent';
+              const { createDebtAccount } = await import('./src/db/accounts');
+              const debtAcc = createDebtAccount(newDebt.id, dType as 'owed' | 'lent', debtData.person);
+              try { await db.accounts.add(debtAcc); } catch {}
+              if (createTransaction) {
+                const wAccId = resolveWalletAccId(wallet);
+                await accountingAdapter.recordDebtCreation({
+                  debtId: newDebt.id,
+                  debtType: dType as 'owed' | 'lent',
+                  amount: debtData.amount,
+                  date: debtData.date,
+                  description: debtData.type === DebtType.LENT ? `Loan to ${debtData.person}` : `Loan from ${debtData.person}`,
+                  walletAccountId: wAccId,
+                  createTransaction: true,
+                });
+              }
+            } catch (e) { console.error('v2 debt creation failed:', e); }
         });
     }
     closeAllModals();
@@ -1074,6 +1203,21 @@ const App: FC = () => {
               debtInstallmentId: installmentId
             };
             await db.transactionItems.add(newTransaction);
+
+            // Also write to double-entry
+            try {
+              const dType = isLent ? 'lent' : 'owed';
+              const wAccId = resolveWalletAccId(data.wallet);
+              await accountingAdapter.recordDebtPayment({
+                debtId: debtForInstallment.id,
+                debtType: dType as 'owed' | 'lent',
+                amount: data.installmentData.amount,
+                date: data.installmentData.date,
+                walletAccountId: wAccId,
+                note: isLent ? `Payment received from ${debtForInstallment.person}` : `Payment made to ${debtForInstallment.person}`,
+                debtInstallmentId: installmentId,
+              });
+            } catch (e) { console.error('v2 debt payment failed:', e); }
           }
         }
 
@@ -1177,6 +1321,23 @@ const App: FC = () => {
                     };
                     await db.transactionItems.add(newTransaction);
                 }
+
+                // Also write to double-entry
+                if (createTransaction && wallet) {
+                  try {
+                    const { createInvestmentAccount } = await import('./src/db/accounts');
+                    const invAcc = createInvestmentAccount(newInvestment.id, investmentData.name);
+                    try { await db.accounts.add(invAcc); } catch {}
+                    const wAccId = resolveWalletAccId(wallet);
+                    await accountingAdapter.recordInvestmentBuy({
+                      investmentId: newInvestment.id,
+                      amount: contributionAmount,
+                      date: investmentData.startDate,
+                      walletAccountId: wAccId,
+                      description: `Investment: ${investmentData.name}`,
+                    });
+                  } catch (e) { console.error('v2 investment buy failed:', e); }
+                }
             }
         });
         closeAllModals();
@@ -1238,6 +1399,22 @@ const App: FC = () => {
                     isReconciliation: false,
                 };
                 await db.transactionItems.add(newTransaction);
+
+                // Also write to double-entry
+                try {
+                  const wAccId = resolveWalletAccId(wallet);
+                  switch (transactionData.type) {
+                    case InvestmentTransactionType.CONTRIBUTION:
+                      await accountingAdapter.recordInvestmentBuy({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
+                      break;
+                    case InvestmentTransactionType.WITHDRAWAL:
+                      await accountingAdapter.recordInvestmentSell({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
+                      break;
+                    case InvestmentTransactionType.DIVIDEND:
+                      await accountingAdapter.recordInvestmentDividend({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
+                      break;
+                  }
+                } catch (e) { console.error('v2 investment tx failed:', e); }
             }
         });
     }
@@ -1305,16 +1482,17 @@ const App: FC = () => {
                 await db.transactionItems.where({ transferId }).delete();
                 setAnimatingOutIds(prev => prev.filter(id => !idsToDelete.includes(id)));
             }, 300);
+            // Also delete from v2 (single transfer txn)
+            try { await accountingAdapter.deleteTransaction(transactionToDelete.id); } catch {}
         } else {
              const idToDelete = transactionToDelete.id;
             setAnimatingOutIds(prev => [...prev, idToDelete]);
             setTimeout(async () => {
-                // For simple transactions, or those linked to debts/investments where
-                // the parent item is NOT deleted, just delete the transaction itself.
-                // The atomic logic for deleting parents is handled when deleting the parent item.
                 await db.transactionItems.delete(idToDelete);
                 setAnimatingOutIds(prev => prev.filter(id => id !== idToDelete));
             }, 300);
+            // Also delete from v2
+            try { await accountingAdapter.deleteTransaction(idToDelete); } catch {}
         }
     }
     
@@ -1360,6 +1538,21 @@ const App: FC = () => {
                 debtInstallmentId: finalInstallment.id
             };
             await db.transactionItems.add(newTransaction);
+
+            // Also write settlement to double-entry
+            try {
+              const dType = settlingDebt.type === DebtType.LENT ? 'lent' : 'owed';
+              const wAccId = resolveWalletAccId(data.wallet);
+              await accountingAdapter.recordDebtPayment({
+                debtId: settlingDebt.id,
+                debtType: dType as 'owed' | 'lent',
+                amount: remainingAmount,
+                date: data.settlementDate,
+                walletAccountId: wAccId,
+                note: settlingDebt.type === DebtType.LENT ? `Settled debt from ${settlingDebt.person}` : `Paid back debt to ${settlingDebt.person}`,
+                debtInstallmentId: finalInstallment.id,
+              });
+            } catch (e) { console.error('v2 debt settlement failed:', e); }
         }
         await db.debts.update(settlingDebt.id, { status: DebtStatus.SETTLED });
     });
@@ -1371,6 +1564,25 @@ const App: FC = () => {
     if (!forgivingDebt) return;
 
     await db.debts.update(forgivingDebt.id, { status: DebtStatus.WAIVED });
+
+    // Also write waiver to double-entry
+    try {
+      const dType = forgivingDebt.type === DebtType.LENT ? 'lent' : 'owed';
+      // Calculate remaining amount
+      const installments = debtInstallments?.filter(di => di.debtId === forgivingDebt.id) || [];
+      const paidAmount = installments.reduce((sum, inst) => sum + inst.amount, 0);
+      const remainingAmount = Math.max(0, forgivingDebt.amount - paidAmount);
+      if (remainingAmount > 0) {
+        await accountingAdapter.recordDebtWaive({
+          debtId: forgivingDebt.id,
+          debtType: dType as 'owed' | 'lent',
+          amount: remainingAmount,
+          date: new Date().toISOString().slice(0, 10),
+          note: `Debt waived for ${forgivingDebt.person}`,
+        });
+      }
+    } catch (e) { console.error('v2 debt waive failed:', e); }
+
     closeAllModals();
   };
 
@@ -1411,6 +1623,18 @@ const App: FC = () => {
                 isReconciliation: false,
             };
             await db.transactionItems.add(newTransaction);
+
+            // Also write to double-entry
+            try {
+              const wAccId = resolveWalletAccId(data.wallet);
+              await accountingAdapter.recordInvestmentSell({
+                investmentId: sellingInvestment.id,
+                amount: sellingInvestment.currentValue,
+                date: data.sellDate,
+                walletAccountId: wAccId,
+                description: `Sold investment: ${sellingInvestment.name}`,
+              });
+            } catch (e) { console.error('v2 investment sell failed:', e); }
         }
 
         await db.investments.update(sellingInvestment.id, { status: InvestmentStatus.SOLD });
@@ -1444,7 +1668,9 @@ const App: FC = () => {
     projectedPeriodicIncome,
     projectedPeriodicExpense,
   } = useMemo(() => {
-    if (!transactions) return { filteredTransactions: [], periodicIncome: 0, periodicExpense: 0, projectedPeriodicIncome: 0, projectedPeriodicExpense: 0 };
+    // Use presented (double-entry) transactions when available, else legacy
+    const source = presentedTransactions ?? transactions;
+    if (!source) return { filteredTransactions: [], periodicIncome: 0, periodicExpense: 0, projectedPeriodicIncome: 0, projectedPeriodicExpense: 0 };
     
     let periodStartDate: Date;
     let periodEndDate: Date;
@@ -1483,12 +1709,9 @@ const App: FC = () => {
     let expense = 0;
     let projIncome = 0;
     let projExpense = 0;
-    let overallOpIncome = 0;
-    let overallOpExpense = 0;
-    const periodTransactions: Transaction[] = [];
+    const periodTransactions: typeof source = [];
     
-    transactions.forEach(tx => {
-      // 1. Filter for List View and Periodic Stats
+    source.forEach(tx => {
       const txDate = new Date(tx.date + 'T00:00:00');
 
       const walletMatch = filter.wallet === 'all' || tx.wallet === filter.wallet;
@@ -1498,7 +1721,7 @@ const App: FC = () => {
         periodTransactions.push(tx);
         if (tx.isReconciliation || (filter.wallet === 'all' && tx.transferId)) return;
         
-        if (tx.type === TransactionType.INCOME) {
+        if (tx.type === 'income') {
             projIncome += tx.amount;
             if (txDate <= today) income += tx.amount;
         } else {
@@ -1510,8 +1733,8 @@ const App: FC = () => {
 
     const finalFilteredTransactions = periodTransactions.filter(tx => {
       switch (filter.transactionType) {
-        case TransactionFilterType.INCOME: return tx.type === TransactionType.INCOME && !tx.transferId && !tx.isReconciliation;
-        case TransactionFilterType.EXPENSE: return tx.type === TransactionType.EXPENSE && !tx.transferId && !tx.isReconciliation;
+        case TransactionFilterType.INCOME: return tx.type === 'income' && !tx.transferId && !tx.isReconciliation;
+        case TransactionFilterType.EXPENSE: return tx.type === 'expense' && !tx.transferId && !tx.isReconciliation;
         case TransactionFilterType.TRANSFER: return !!tx.transferId;
         case TransactionFilterType.ADJUSTMENT: return tx.isReconciliation;
         default: return true;
@@ -1525,13 +1748,14 @@ const App: FC = () => {
         projectedPeriodicIncome: projIncome, 
         projectedPeriodicExpense: projExpense,
     };
-  }, [transactions, filter, today]);
+  }, [presentedTransactions, transactions, filter, today]);
 
   const {
     periodicOperationalIncome,
     periodicOperationalExpense,
   } = useMemo(() => {
-    if (!transactions) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
+    const source = presentedTransactions ?? transactions;
+    if (!source) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
     
     let periodStartDate: Date;
     let periodEndDate: Date;
@@ -1574,8 +1798,8 @@ const App: FC = () => {
     let income = 0;
     let expense = 0;
 
-    transactions.forEach(tx => {
-      // 3. Filter Operational Types (Exclude irrelevant types)
+    source.forEach(tx => {
+      // Filter Operational Types (Exclude irrelevant types)
       if (
         tx.isReconciliation || 
         tx.transferId || 
@@ -1585,10 +1809,8 @@ const App: FC = () => {
 
       const txDate = new Date(tx.date + 'T00:00:00');
 
-      // 4. Strict Date Check
-      // We check if it is within the period AND strictly in the past/present
       if (txDate >= periodStartDate && txDate <= periodEndDate && txDate <= today) {
-        if (tx.type === TransactionType.INCOME) {
+        if (tx.type === 'income') {
             income += tx.amount;
         } else {
             expense += tx.amount;
@@ -1600,12 +1822,13 @@ const App: FC = () => {
         periodicOperationalIncome: income,
         periodicOperationalExpense: expense 
     };
-  }, [cashFlowFilter, transactions, today]);
+  }, [cashFlowFilter, presentedTransactions, transactions, today]);
   
   
 
   const { currentBalance, projectedBalance, globalBalance } = useMemo(() => {
-    if (!transactions)
+    const source = presentedTransactions ?? transactions;
+    if (!source)
       return { currentBalance: 0, projectedBalance: 0, globalBalance: 0 };
 
     let current = 0;
@@ -1614,23 +1837,23 @@ const App: FC = () => {
 
     const relevantTransactions =
       filter.wallet === "all"
-        ? transactions
-        : transactions.filter((tx) => tx.wallet === filter.wallet);
+        ? source
+        : source.filter((tx) => tx.wallet === filter.wallet);
 
     relevantTransactions.forEach((tx) => {
       const txDate = new Date(tx.date + "T00:00:00");
       const amount =
-        tx.type === TransactionType.INCOME ? tx.amount : -tx.amount;
+        tx.type === 'income' ? tx.amount : -tx.amount;
       projected += amount;
       if (txDate <= today) current += amount;
     });
 
     // Calculate global balance (all wallets) for Health check
-    transactions.forEach((tx) => {
+    source.forEach((tx) => {
       const txDate = new Date(tx.date + "T00:00:00");
       if (txDate <= today) {
         const amount =
-          tx.type === TransactionType.INCOME ? tx.amount : -tx.amount;
+          tx.type === 'income' ? tx.amount : -tx.amount;
         global += amount;
       }
     });
@@ -1640,7 +1863,7 @@ const App: FC = () => {
       projectedBalance: projected,
       globalBalance: global,
     };
-  }, [transactions, filter.wallet, today]);
+  }, [presentedTransactions, transactions, filter.wallet, today]);
 
   const filteredDebts = useMemo(() => {
     if (!debts) return [];
@@ -1774,21 +1997,17 @@ const App: FC = () => {
         return;
     }
 
-    const newTransaction: Transaction = {
-        id: crypto.randomUUID(),
-        type: difference > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
-        amount: Math.abs(difference),
-        date: getLocalDateString(),
-        description: "Balance Adjustment",
-        isReconciliation: true,
-        wallet: filter.wallet !== 'all' ? filter.wallet : wallets[0] || 'Default',
-    };
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
 
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        await db.transactionItems.add(newTransaction);
+    const walletName = filter.wallet !== 'all' ? filter.wallet : wallets[0] || 'Default';
+    const wAccId = resolveWalletAccId(walletName);
+    await accountingAdapter.recordAdjustment({
+      walletAccountId: wAccId,
+      amount: difference,
+      date: getLocalDateString(),
+      description: 'Balance Adjustment',
     });
 
     setIsReconcileModalOpen(false);
@@ -1800,7 +2019,7 @@ const App: FC = () => {
 
     switch(view) {
       case 'transactions':
-        transactionCSV = generateTransactionsCSV(filteredTransactions);
+        transactionCSV = generateTransactionsCSV(filteredTransactions as any);
         if (transactionCSV) hasData = true;
         break;
       case 'debts':
@@ -1833,13 +2052,24 @@ const App: FC = () => {
   };
   
   const handleExportAllData = async () => {
-    const transactionCSV = generateTransactionsCSV(transactions || []);
-    const debtCSV = generateDebtsCSV(debts || []);
-    const debtInstallmentsCSV = generateDebtInstallmentsCSV(debtInstallments || []);
-    const investmentCSV = generateInvestmentsCSV(investments || []);
-    const investmentTransactionsCSV = generateInvestmentTransactionsCSV(investmentTransactions || []);
+    // Fetch data directly from DB to ensure export works even when UI state (like during migration) isn't populated
+    const dbTransactions = await db.transactionItems.toArray();
+    const dbDebts = await db.debts.toArray();
+    const dbDebtInstallments = await db.debtInstallements.toArray();
+    const dbInvestments = await db.investments.toArray();
+    const dbInvestmentTransactions = await db.investmentTransactions.toArray();
+    const dbAccounts = await db.accounts.toArray();
+    const dbDoubleEntryTransactions = await db.transactions_v2.toArray();
+
+    const transactionCSV = generateTransactionsCSV(dbTransactions);
+    const debtCSV = generateDebtsCSV(dbDebts);
+    const debtInstallmentsCSV = generateDebtInstallmentsCSV(dbDebtInstallments);
+    const investmentCSV = generateInvestmentsCSV(dbInvestments);
+    const investmentTransactionsCSV = generateInvestmentTransactionsCSV(dbInvestmentTransactions);
+    const accountsCSV = generateAccountsCSV(dbAccounts);
+    const doubleEntryTransactionsCSV = generateDoubleEntryTransactionsCSV(dbDoubleEntryTransactions);
     
-    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV;
+    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV || accountsCSV || doubleEntryTransactionsCSV;
 
     if (!hasData) {
         showAlert('No Data to Export', 'There is no data to export.');
@@ -1847,7 +2077,7 @@ const App: FC = () => {
     }
 
     try {
-        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV });
+        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV, accountsCSV, doubleEntryTransactionsCSV });
         // Update last backup date on successful export
         await db.settings.put({ key: 'lastBackupDate', value: new Date().toISOString() });
         setBackupReminder({ show: false, days: null });
@@ -1868,8 +2098,10 @@ const App: FC = () => {
         const { successful: importedDebtInstallments, errors: debtInstallmentErrors } = files['debtInstallments.csv'] ? parseDebtInstallmentsCSV(files['debtInstallments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestments, errors: invErrors } = files['investments.csv'] ? parseInvestmentsCSV(files['investments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestmentTxs, errors: invTxErrors } = files['investment_transactions.csv'] ? parseInvestmentTransactionsCSV(files['investment_transactions.csv']) : { successful: [], errors: [] };
+        const { successful: importedAccounts, errors: accErrors } = files['accounts.csv'] ? parseAccountsCSV(files['accounts.csv']) : { successful: [], errors: [] };
+        const { successful: importedDoubleTxns, errors: doubleTxErrors } = files['double_entry_transactions.csv'] ? parseDoubleEntryTransactionsCSV(files['double_entry_transactions.csv']) : { successful: [], errors: [] };
 
-        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors];
+        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors, ...accErrors, ...doubleTxErrors];
 
         // Data integrity check: Ensure investment transactions have a valid parent.
         const existingInvestmentIds = new Set((await db.investments.toArray()).map(i => i.id));
@@ -1893,13 +2125,15 @@ const App: FC = () => {
         const allErrors = [...allParseErrors, ...orphanedInvestmentTxErrors];
 
         // Fix: Pass tables as an array to db.transaction and add type to summary
-        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings], async () => {
+        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings, db.accounts, db.transactions_v2], async () => {
             const resultSummary: ImportResultSummary = {
                 tx: { added: 0, updated: 0 },
                 debt: { added: 0, updated: 0 },
                 debtInst: {added: 0, updated: 0 },
                 inv: { added: 0, updated: 0 },
-                invTx: { added: 0, updated: 0 }
+                invTx: { added: 0, updated: 0 },
+                acc: { added: 0, updated: 0 },
+                doubleTx: { added: 0, updated: 0 }
             };
 
             // Process Investments
@@ -1956,7 +2190,33 @@ const App: FC = () => {
               });
               await db.debtInstallements.bulkPut(importedDebtInstallments)
             }
+
+            // Process Accounts
+            if (importedAccounts.length > 0) {
+                const existingAccIds = new Set(await db.accounts.where('id').anyOf(importedAccounts.map(i => i.id)).primaryKeys());
+                importedAccounts.forEach(acc => {
+                    if (existingAccIds.has(acc.id)) resultSummary.acc.updated++;
+                    else resultSummary.acc.added++;
+                });
+                await db.accounts.bulkPut(importedAccounts);
+            }
+
+            // Process Double Entry Transactions
+            if (importedDoubleTxns.length > 0) {
+                const existingDoubleTxIds = new Set(await db.transactions_v2.where('id').anyOf(importedDoubleTxns.map(i => i.id)).primaryKeys());
+                importedDoubleTxns.forEach(tx => {
+                    if (existingDoubleTxIds.has(tx.id)) resultSummary.doubleTx.updated++;
+                    else resultSummary.doubleTx.added++;
+                });
+                await db.transactions_v2.bulkPut(importedDoubleTxns);
+            }
             
+            // Trigger migration if old transactions were imported (so they are converted to Double Entry)
+            if (importedTransactions.length > 0 || importedDebts.length > 0 || importedInvestments.length > 0) {
+                await db.settings.put({ key: 'migrationV3Complete', value: false });
+                await runMigrationV3();
+            }
+
             return resultSummary;
         });
 
@@ -1974,7 +2234,7 @@ const App: FC = () => {
         setImportSummaryModal({ 
             isOpen: true, 
             summary: { 
-                tx: { added: 0, updated: 0 }, debt: { added: 0, updated: 0 }, inv: { added: 0, updated: 0 }, invTx: { added: 0, updated: 0 }, errors: [],
+                tx: { added: 0, updated: 0 }, debt: { added: 0, updated: 0 }, debtInst: {added: 0, updated: 0}, inv: { added: 0, updated: 0 }, invTx: { added: 0, updated: 0 }, acc: { added: 0, updated: 0 }, doubleTx: { added: 0, updated: 0 }, errors: [],
                 error: "Import failed. Please make sure you are using a valid .zip file exported from this app. See the browser console for more details."
             }
         });
@@ -2003,10 +2263,10 @@ const App: FC = () => {
     setBackupReminder({ show: false, days: null });
   };
 
-  const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined);
+  const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined || doubleEntryTxns === undefined || allAccounts === undefined);
   
   if (appStatus === 'LOADING' || appStatus === 'MIGRATING') {
-    return <FullScreenLoader message={appStatus === 'MIGRATING' ? 'Securing your data...' : 'Loading...'} />;
+    return <FullScreenLoader message={appStatus === 'MIGRATING' ? migrationProgress || 'Migrating your data...' : 'Loading...'} />;
   }
   
   if (pendingRecoveryPhrase) {
@@ -2031,6 +2291,58 @@ const App: FC = () => {
             )}
         </>
       );
+  }
+
+  if (appStatus === 'MIGRATION_REQUIRED') {
+    return (
+      <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex flex-col justify-center items-center z-50 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg p-8 text-center">
+          <div className="text-4xl mb-4">🔄</div>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">Data Upgrade Required</h2>
+          <p className="text-slate-600 dark:text-slate-300 mb-6">
+            Your data needs to be upgraded to the new double-entry accounting format.
+            This is a one-time process that will improve data integrity.
+          </p>
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-4 mb-6 text-left">
+            <p className="text-amber-800 dark:text-amber-200 font-semibold text-sm mb-2">⚠️ Important: Back up your data first!</p>
+            <p className="text-amber-700 dark:text-amber-300 text-sm">
+              Please export a backup of your data before proceeding. This ensures you can recover your data if anything goes wrong.
+            </p>
+          </div>
+
+          {!migrationBackupDone ? (
+            <div className="space-y-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await handleExportAllData();
+                    setMigrationBackupDone(true);
+                  } catch (e) {
+                    console.error('Backup failed:', e);
+                  }
+                }}
+                className="w-full py-3 px-4 text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm font-medium transition"
+              >
+                📦 Export Backup
+              </button>
+              <button
+                onClick={() => setMigrationBackupDone(true)}
+                className="w-full text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 py-2"
+              >
+                I already have a recent backup — skip
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleRunMigration}
+              className="w-full py-3 px-4 text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm font-medium transition"
+            >
+              ✅ Proceed with Migration
+            </button>
+          )}
+        </div>
+      </div>
+    );
   }
 
   if (isLoading) {
@@ -2114,7 +2426,7 @@ const App: FC = () => {
                   defaultPeriod={defaultFilterPeriod}
                 />
                 <TransactionList
-                  transactions={filteredTransactions}
+                  transactions={filteredTransactions as any}
                   onEdit={handleOpenEditForm}
                   onDelete={handleOpenDeleteModal}
                   animatingOutIds={animatingOutIds}
@@ -2298,7 +2610,7 @@ const App: FC = () => {
         currentDefault={defaultFilterPeriod}
         currentDefaultWallet={correctedDefaultWallet}
         currentDeficitThreshold={deficitThreshold}
-        wallets={wallets}
+        walletAccounts={walletAccounts}
         onSave={handleSaveSettings}
         onShowOnboarding={handleShowOnboarding}
         onOpenBulkAdd={() => { setIsSettingsModalOpen(false); setIsBulkAddModalOpen(true); }}

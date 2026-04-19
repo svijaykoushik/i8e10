@@ -17,6 +17,8 @@ interface ImportSummary {
     debtInst: SummaryCount;
     inv: SummaryCount;
     invTx: SummaryCount;
+    acc: SummaryCount;
+    doubleTx: SummaryCount;
     error?: string;
     errors?: ParseError[];
 }
@@ -46,7 +48,7 @@ const ImportSummaryModal: FC<ImportSummaryModalProps> = ({ isOpen, onClose, summ
   const hasError = !!summary.error;
   const hasWarnings = !!summary.errors && summary.errors.length > 0;
   const title = hasError ? 'Import Failed / இறக்குமதி தோல்வியுற்றது' : 'Import Complete! / இறக்குமதி முடிந்தது!';
-  const totalProcessed = summary.tx.added + summary.tx.updated + summary.debt.added + summary.debt.updated + summary.inv.added + summary.inv.updated + summary.invTx.added + summary.invTx.updated;
+  const totalProcessed = summary.tx.added + summary.tx.updated + summary.debt.added + summary.debt.updated + summary.inv.added + summary.inv.updated + summary.invTx.added + summary.invTx.updated + summary.acc.added + summary.acc.updated + summary.doubleTx.added + summary.doubleTx.updated;
 
   const footer = (
     <button
@@ -57,6 +59,11 @@ const ImportSummaryModal: FC<ImportSummaryModalProps> = ({ isOpen, onClose, summ
       OK
     </button>
   );
+
+  const combinedTxCount = {
+      added: summary.tx.added + summary.doubleTx.added,
+      updated: summary.tx.updated + summary.doubleTx.updated,
+  };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} footer={footer}>
@@ -71,11 +78,12 @@ const ImportSummaryModal: FC<ImportSummaryModalProps> = ({ isOpen, onClose, summ
                         <>
                             <p>The import file was processed successfully:</p>
                             <ul className="list-disc list-inside space-y-1 pl-2 mt-2">
-                                <SummaryListItem count={summary.tx} label="Transactions / பரிவர்த்தனைகள்" />
+                                <SummaryListItem count={combinedTxCount} label="Transactions / பரிவர்த்தனைகள்" />
                                 <SummaryListItem count={summary.debt} label="Debts / கடன்கள்" />
                                 <SummaryListItem count={summary.debtInst} label="Debt Installments / கடன் தவணைகள்" />
                                 <SummaryListItem count={summary.inv} label="Investments / முதலீடுகள்" />
                                 <SummaryListItem count={summary.invTx} label="Investment Transactions / முதலீட்டு பரிவர்த்தனைகள்" />
+                                <SummaryListItem count={summary.acc} label="Accounts / கணக்குகள்" />
                             </ul>
                         </>
                     ) : (

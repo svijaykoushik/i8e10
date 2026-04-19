@@ -113,3 +113,50 @@ export const generateInvestmentTransactionsCSV = (transactions: InvestmentTransa
 
     return csvRows.join('\n');
 };
+
+// --- Double-Entry Exports ---
+
+import type { Account } from '../src/db/accounts';
+import type { DoubleEntryTransaction } from '../src/db/doubleEntryTypes';
+
+export const generateAccountsCSV = (accounts: Account[]): string => {
+    if (accounts.length === 0) return '';
+
+    const headers = ['ID', 'Name', 'Type', 'Sub Type', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    accounts.forEach(acc => {
+        const row = [
+            acc.id,
+            `"${acc.name.replace(/"/g, '""')}"`,
+            acc.type,
+            acc.subtype || '',
+            acc.createdAt || '',
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    return csvRows.join('\n');
+};
+
+export const generateDoubleEntryTransactionsCSV = (transactions: DoubleEntryTransaction[]): string => {
+    if (transactions.length === 0) return '';
+
+    const headers = ['ID', 'Date', 'Note', 'Kind', 'Entries (JSON)', 'Created At'];
+    const csvRows = [headers.join(',')];
+
+    transactions.forEach(txn => {
+        const entriesJson = JSON.stringify(txn.entries).replace(/"/g, '""');
+        const row = [
+            txn.id,
+            txn.date,
+            `"${(txn.note || '').replace(/"/g, '""')}"`,
+            txn.meta?.kind || '',
+            `"${entriesJson}"`,
+            txn.createdAt || '',
+        ];
+        csvRows.push(row.join(','));
+    });
+
+    return csvRows.join('\n');
+};
