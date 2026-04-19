@@ -50,6 +50,8 @@ import { exportToZip, readZip } from './utils/zipExporter';
 import { isMigrationComplete, runMigrationV3 } from './utils/migrationV3';
 import * as accountingAdapter from './utils/accountingAdapter';
 import * as accountManager from './utils/accountManager';
+import * as debtManager from './utils/debtManager';
+import * as investmentManager from './utils/investmentManager';
 import { computeWalletBalance, computeTotalWalletBalance } from './utils/balanceCalculator';
 import { presentAllForUI, type PresentedTransaction } from './utils/transactionPresenter';
 import type { DoubleEntryTransaction } from './src/db/doubleEntryTypes';
@@ -1107,147 +1109,18 @@ const App: FC = () => {
   }) => {
     if (!debtForInstallment) return;
 
-    await db.transaction(
-      "rw",
-      db.debts,
-      db.debtInstallements,
-      db.transactionItems,
-      db.settings,
-      async () => {
-        const linkedDebt = await db.debts.get(data.installmentData.debtId);
-        const allInstallments: DebtInstallment[] = await db.debtInstallements
-          .where({ debtId: data.installmentData.debtId })
-          .toArray();
-
-        if (data.installmentData.id) {
-          // Edit mode
-          await db.transaction(
-            "rw",
-            db.debtInstallements,
-            db.transactionItems,
-            db.settings,
-            async () => {
-              if (!appFirstUseDate) {
-                await db.settings.put({
-                  key: "appFirstUseDate",
-                  value: new Date().toISOString(),
-                });
-              }
-              await db.debtInstallements.update(
-                data.installmentData.id,
-                {...data.installmentData}
-              );
-
-              const linkedTransactions = await db.transactionItems.where({
-                debtInstallmentId: data.installmentData.id
-              }).toArray();
-
-              if (linkedTransactions?.[0]) {
-                const linkedTransaction = linkedTransactions[0] as Transaction;
-                await db.transactionItems.update(linkedTransaction.id, {
-                  ...linkedTransaction,
-                  amount: data.installmentData.amount,
-                });
-              }
-            }
-          );
-        } else {
-          // Add mode
-
-          if (!appFirstUseDate) {
-            await db.settings.put({
-              key: "appFirstUseDate",
-              value: new Date().toISOString(),
-            });
-          }
-
-
-          const installmentId = crypto.randomUUID()
-          const newInstallment: DebtInstallment = {
-            ...data.installmentData,
-            id: installmentId,
-          };
-
-          // 1. Add debt installment transaction
-          await db.debtInstallements.add(newInstallment);
-
-          // 2. Create Transaction for the payment
-          if (data.createTransaction) {
-            const isLent = debtForInstallment.type === DebtType.LENT;
-            const newTransaction: Transaction = {
-              id: crypto.randomUUID(),
-              type: isLent ? TransactionType.INCOME : TransactionType.EXPENSE,
-              amount: data.installmentData.amount,
-              date: data.installmentData.date,
-              description: isLent
-                ? `Payment received from ${debtForInstallment.person}`
-                : `Payment made to ${debtForInstallment.person}`,
-              wallet: data.wallet,
-              debtId: debtForInstallment.id,
-              isReconciliation: false,
-              debtInstallmentId: installmentId
-            };
-            await db.transactionItems.add(newTransaction);
-
-            // Also write to double-entry
-            try {
-              const dType = isLent ? 'lent' : 'owed';
-              const wAccId = resolveWalletAccId(data.wallet);
-              await accountingAdapter.recordDebtPayment({
-                debtId: debtForInstallment.id,
-                debtType: dType as 'owed' | 'lent',
-                amount: data.installmentData.amount,
-                date: data.installmentData.date,
-                walletAccountId: wAccId,
-                note: isLent ? `Payment received from ${debtForInstallment.person}` : `Payment made to ${debtForInstallment.person}`,
-                debtInstallmentId: installmentId,
-              });
-            } catch (e) { console.error('v2 debt payment failed:', e); }
-          }
-        }
-
-        // Handle debt status
-        const newStatus = data.markAsSettled ? DebtStatus.SETTLED : DebtStatus.OUTSTANDING;
-        await db.debts.update(debtForInstallment.id, {
-                status: newStatus
-        });
-
-        // Handle Surplus (Overpayment) - Create New Debt
-        if (data.createSurplusRecord) {
-          const paidPreviously = (allInstallments || []).reduce(
-            (sum, i) => sum + i.amount,
-            0
-          );
-          const remaining = Math.max(
-            0,
-            (linkedDebt?.amount || 0) - paidPreviously
-          );
-          const surplusAmount = Math.max(
-            0,
-            data.installmentData.amount - remaining
-          );
-
-          if (surplusAmount > 0) {
-            const isOriginalLent = debtForInstallment.type === DebtType.LENT;
-            const newDebtType = isOriginalLent ? DebtType.OWED : DebtType.LENT; // Inverse
-
-            const newDebt: Debt = {
-              id: crypto.randomUUID(),
-              type: newDebtType,
-              person: debtForInstallment.person,
-              amount: surplusAmount,
-              description: `Overpayment from previous ${
-                isOriginalLent ? "loan" : "debt"
-              } settlement`,
-              date: data.installmentData.date,
-              status: DebtStatus.OUTSTANDING,
-            };
-            await db.debts.add(newDebt);
-          }
-        }
-      }
-    );
-    closeAllModals();
+    try {
+      const wAccId = resolveWalletAccId(data.wallet);
+      await debtManager.saveDebtInstallment({
+        ...data,
+        walletAccountId: wAccId,
+        debtForInstallment,
+        appFirstUseDateExists: !!appFirstUseDate,
+      });
+      closeAllModals();
+    } catch (e) {
+      console.error("Failed to save debt installment:", e);
+    }
   };
   
   const handleSaveInvestment = async (data: {
@@ -1321,76 +1194,17 @@ const App: FC = () => {
     createTransaction: boolean;
     wallet: string;
   }) => {
-    const { transactionData, createTransaction, wallet } = data;
-
-    if (transactionData.id) { // Edit mode
-        await db.transaction('rw', db.investmentTransactions, db.settings, async () => {
-            if (!appFirstUseDate) {
-                await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-            }
-            await db.investmentTransactions.update(transactionData.id, transactionData);
-        });
-    } else { // Add mode
-
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.settings, async () => {
-            if (!appFirstUseDate) {
-                await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-            }
-            const newInvestmentTx: InvestmentTransaction = { ...transactionData, id: crypto.randomUUID() };
-            await db.investmentTransactions.add(newInvestmentTx);
-
-            if (createTransaction) {
-                let transactionType: TransactionType;
-                let description = '';
-                const invName = investments?.find(i => i.id === transactionData.investmentId)?.name || 'Unknown Investment';
-
-                switch (transactionData.type) {
-                    case InvestmentTransactionType.CONTRIBUTION:
-                        transactionType = TransactionType.EXPENSE;
-                        description = `Investment Top-up: ${invName}`;
-                        break;
-                    case InvestmentTransactionType.WITHDRAWAL:
-                        transactionType = TransactionType.INCOME;
-                        description = `Investment Withdrawal: ${invName}`;
-                        break;
-                    case InvestmentTransactionType.DIVIDEND:
-                    default:
-                        transactionType = TransactionType.INCOME;
-                        description = `Dividend: ${invName}`;
-                        break;
-                }
-
-                const newTransaction: Transaction = {
-                    id: crypto.randomUUID(),
-                    type: transactionType,
-                    amount: transactionData.amount,
-                    date: transactionData.date,
-                    description,
-                    wallet: wallet,
-                    investmentTransactionId: newInvestmentTx.id,
-                    isReconciliation: false,
-                };
-                await db.transactionItems.add(newTransaction);
-
-                // Also write to double-entry
-                try {
-                  const wAccId = resolveWalletAccId(wallet);
-                  switch (transactionData.type) {
-                    case InvestmentTransactionType.CONTRIBUTION:
-                      await accountingAdapter.recordInvestmentBuy({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
-                      break;
-                    case InvestmentTransactionType.WITHDRAWAL:
-                      await accountingAdapter.recordInvestmentSell({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
-                      break;
-                    case InvestmentTransactionType.DIVIDEND:
-                      await accountingAdapter.recordInvestmentDividend({ investmentId: transactionData.investmentId, amount: transactionData.amount, date: transactionData.date, walletAccountId: wAccId, description });
-                      break;
-                  }
-                } catch (e) { console.error('v2 investment tx failed:', e); }
-            }
-        });
+    try {
+      const wAccId = resolveWalletAccId(data.wallet);
+      await investmentManager.saveInvestmentTransaction({
+        ...data,
+        walletAccountId: wAccId,
+        appFirstUseDateExists: !!appFirstUseDate,
+      });
+      closeAllModals();
+    } catch (e) {
+      console.error("Failed to save investment transaction:", e);
     }
-    closeAllModals();
   };
 
 

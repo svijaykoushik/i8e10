@@ -42,6 +42,7 @@ export interface TransactionMeta {
   debtId?: string;
   installmentNo?: number;
   investmentId?: string;
+  investmentTransactionId?: string;
   debtInstallmentId?: string;
   isReconciliation?: boolean;
   /** Populated only during migration for traceability back to old records */

@@ -230,6 +230,7 @@ export async function recordInvestmentBuy(params: {
   date: string;
   walletAccountId: string;
   description: string;
+  investmentTransactionId?: string;
 }): Promise<DoubleEntryTransaction> {
   const invAccId = investmentAccountId(params.investmentId);
   const entries: TransactionEntry[] = [
@@ -239,6 +240,7 @@ export async function recordInvestmentBuy(params: {
 
   const txn = createTransaction(params.date, params.description, entries, 'investment_buy', {
     investmentId: params.investmentId,
+    investmentTransactionId: params.investmentTransactionId,
   });
   return saveTransaction(txn);
 }
@@ -253,6 +255,7 @@ export async function recordInvestmentSell(params: {
   date: string;
   walletAccountId: string;
   description: string;
+  investmentTransactionId?: string;
 }): Promise<DoubleEntryTransaction> {
   const invAccId = investmentAccountId(params.investmentId);
   const entries: TransactionEntry[] = [
@@ -262,6 +265,7 @@ export async function recordInvestmentSell(params: {
 
   const txn = createTransaction(params.date, params.description, entries, 'investment_sell', {
     investmentId: params.investmentId,
+    investmentTransactionId: params.investmentTransactionId,
   });
   return saveTransaction(txn);
 }
@@ -276,6 +280,7 @@ export async function recordInvestmentDividend(params: {
   date: string;
   walletAccountId: string;
   description: string;
+  investmentTransactionId?: string;
 }): Promise<DoubleEntryTransaction> {
   const entries: TransactionEntry[] = [
     { accountId: params.walletAccountId, type: 'debit', amount: params.amount },
@@ -284,6 +289,7 @@ export async function recordInvestmentDividend(params: {
 
   const txn = createTransaction(params.date, params.description, entries, 'investment_dividend', {
     investmentId: params.investmentId,
+    investmentTransactionId: params.investmentTransactionId,
   });
   return saveTransaction(txn);
 }
