@@ -237,6 +237,7 @@ class TableProxy<T extends Model> {
 type TableName =
   | "transactionItems"
   | "debts"
+  | "debtInstallments"
   | "investments"
   | "investmentTransactions"
   | "accounts"
@@ -400,6 +401,7 @@ export const db: DB = {
         const allTables: TableName[] = [
           "transactionItems",
           "debts",
+          "debtInstallments",
           "investments",
           "investmentTransactions",
           "accounts",
