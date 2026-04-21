@@ -9,7 +9,9 @@
 import { db } from './db';
 import type { DoubleEntryTransaction, TransactionEntry, TransactionKind } from '../src/db/doubleEntryTypes';
 import { validateBalancedEntries, extractEntryAccountIds } from '../src/db/doubleEntryTypes';
-import { SYSTEM_ACCOUNT_IDS, debtAccountId, investmentAccountId } from '../src/db/accounts';
+import { Account, SYSTEM_ACCOUNT_IDS, debtAccountId, investmentAccountId } from '../src/db/accounts';
+import { presentAllForUI } from './transactionPresenter';
+import type { Transaction } from '../types';
 
 // --- Helpers ---
 
@@ -324,6 +326,19 @@ export async function recordAdjustment(params: {
     { isReconciliation: true }
   );
   return saveTransaction(txn);
+}
+
+/**
+ * Fetch all double-entry transactions and transform them into the view-friendly Transaction format.
+ */
+export async function getTransactions(orderBy: string = 'date'): Promise<Transaction[]> {
+  const [txns, accounts] = await Promise.all([
+    db.transactions_v2.orderBy(orderBy).reverse().toArray() as Promise<DoubleEntryTransaction[]>,
+    db.accounts.toArray() as Promise<Account[]>,
+  ]);
+
+  const accountMap = new Map(accounts.map((a) => [a.id, a]));
+  return presentAllForUI(txns, accountMap);
 }
 
 // --- Update & Delete ---

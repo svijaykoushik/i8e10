@@ -9,20 +9,9 @@
 import type { DoubleEntryTransaction } from '../src/db/doubleEntryTypes';
 import type { Account } from '../src/db/accounts';
 import { SYSTEM_ACCOUNT_IDS } from '../src/db/accounts';
+import { TransactionType, type Transaction } from '../types';
 
-export interface PresentedTransaction {
-  id: string;
-  type: 'income' | 'expense';
-  date: string;
-  amount: number;
-  description: string;
-  wallet?: string;
-  isReconciliation?: boolean;
-  transferId?: string;
-  debtId?: string;
-  debtInstallmentId?: string;
-  investmentTransactionId?: string;
-}
+export type PresentedTransaction = Transaction;
 
 /**
  * Resolve the wallet name from entries.
@@ -60,22 +49,22 @@ export function presentForUI(
   const wallet = resolveWallet(txn, accountMap);
   const amount = getPrimaryAmount(txn);
 
-  let type: 'income' | 'expense';
+  let type: TransactionType;
 
   switch (txn.meta.kind) {
     case 'income':
     case 'investment_dividend':
-      type = 'income';
+      type = TransactionType.INCOME;
       break;
 
     case 'expense':
     case 'credit_card_payment':
-      type = 'expense';
+      type = TransactionType.EXPENSE;
       break;
 
     case 'transfer': {
       // Transfers appear as expense from source wallet
-      type = 'expense';
+      type = TransactionType.EXPENSE;
       break;
     }
 
@@ -87,7 +76,7 @@ export function presentForUI(
         const acc = accountMap.get(e.accountId);
         return acc?.subtype === 'wallet';
       });
-      type = walletEntry?.type === 'debit' ? 'income' : 'expense';
+      type = walletEntry?.type === 'debit' ? TransactionType.INCOME : TransactionType.EXPENSE;
       break;
     }
 
@@ -98,7 +87,7 @@ export function presentForUI(
         const acc = accountMap.get(e.accountId);
         return acc?.subtype === 'wallet';
       });
-      type = walletEntry?.type === 'debit' ? 'income' : 'expense';
+      type = walletEntry?.type === 'debit' ? TransactionType.INCOME : TransactionType.EXPENSE;
       break;
     }
 
@@ -108,16 +97,16 @@ export function presentForUI(
       const hasIncomeCredit = txn.entries.some(
         (e) => e.accountId === SYSTEM_ACCOUNT_IDS.INCOME
       );
-      type = hasIncomeCredit ? 'income' : 'expense';
+      type = hasIncomeCredit ? TransactionType.INCOME : TransactionType.EXPENSE;
       break;
     }
 
     case 'investment_buy':
-      type = 'expense'; // Money leaves wallet
+      type = TransactionType.EXPENSE; // Money leaves wallet
       break;
 
     case 'investment_sell':
-      type = 'income'; // Money enters wallet
+      type = TransactionType.INCOME; // Money enters wallet
       break;
 
     case 'adjustment': {
@@ -127,12 +116,12 @@ export function presentForUI(
         const acc = accountMap.get(e.accountId);
         return acc?.subtype === 'wallet';
       });
-      type = walletEntry?.type === 'debit' ? 'income' : 'expense';
+      type = walletEntry?.type === 'debit' ? TransactionType.INCOME : TransactionType.EXPENSE;
       break;
     }
 
     default:
-      type = 'expense';
+      type = TransactionType.EXPENSE;
   }
 
   return {

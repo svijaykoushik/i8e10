@@ -207,8 +207,7 @@ const App: FC = () => {
   useEffect(() => {
     if (appStatus !== 'UNLOCKED') return;
     const sub = liveQuery(async () => {
-      const txns = await db.transactionItems.orderBy('date').reverse().toArray()
-      return txns;
+      return await accountingAdapter.getTransactions('date');
     }).subscribe((val: Transaction[])=>setTransactions(val));
     return () => sub.unsubscribe();
   }, [appStatus]);
