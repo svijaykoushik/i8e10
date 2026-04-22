@@ -31,7 +31,7 @@ A custom middleware in `utils/db.ts` intercepts `add`, `put`, and `get` operatio
 
 ## State Management
 -   **Global State**: React Context is used sparingly (e.g., `ThemeContext`).
--   **Data State**: `liveQuery` from Dexie is used to bind UI components directly to database queries. This ensures the UI updates automatically when data changes.
+-   **Data State**: The custom live-query implementation in `liveQuery.ts` is used to bind UI components directly to database queries. This ensures the UI updates automatically when data changes.
 -   **Local State**: `useState` is used for form handling and UI toggles.
 
 ## Routing

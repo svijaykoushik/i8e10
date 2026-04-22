@@ -19,7 +19,7 @@ Discover and document **only what is observable from the codebase**.
 Focus on:
 
 ### 1. Architecture & Big Picture
-- **Client-Side Storage**: Specifically the custom IndexedDB wrapper (NOT Dexie.js).
+- **Client-Side Storage**: Specifically the custom IndexedDB wrapper.
 - Major subsystems and boundaries.
 - Client-side encryption mechanisms.
 - Offline-first architecture.
