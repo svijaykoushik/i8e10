@@ -73,6 +73,8 @@ export class CustomDatabase implements DatabaseLike{
 
         // Create object stores with their keyPaths and indexes
         const stores: Record<string, { keyPath: string; indexes: string[] }> = {
+          // --- Legacy / Contextual Metadata Stores ---
+          // @deprecated Replaced by transactions_v2
           transactionItems: {
             keyPath: "id",
             indexes: [

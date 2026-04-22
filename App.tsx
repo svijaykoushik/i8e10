@@ -52,7 +52,7 @@ import * as accountingAdapter from './utils/accountingAdapter';
 import * as accountManager from './utils/accountManager';
 import * as debtManager from './utils/debtManager';
 import * as investmentManager from './utils/investmentManager';
-import { computeWalletBalance, computeTotalWalletBalance } from './utils/balanceCalculator';
+import { computeWalletBalance, computeTotalWalletBalance, computePeriodicFlow } from './utils/balanceCalculator';
 import { presentAllForUI, type PresentedTransaction } from './utils/transactionPresenter';
 import type { DoubleEntryTransaction } from './src/db/doubleEntryTypes';
 import type { Account } from './src/db/accounts';
@@ -615,6 +615,8 @@ const App: FC = () => {
           }
         }
         
+        // Note: db.transactionItems is retained here to ensure legacy offline backups 
+        // that haven't been migrated yet are correctly re-encrypted.
         // Fix: Pass tables as an array to db.transaction
         await db.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings], async () => {
             // Re-write all items to trigger encryption middleware.
@@ -996,12 +998,6 @@ const App: FC = () => {
                 { accountId: wAccId, type: 'credit', amount: data.amount },
               ];
           await accountingAdapter.updateTransaction(existingV2);
-        } else {
-          // Fallback: update legacy store
-          const txToUpdate = await db.transactionItems.get(data.id);
-          if (txToUpdate) {
-            await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
-          }
         }
       } else { // Add mode — write to v2
         if (!appFirstUseDate) {
@@ -1144,7 +1140,7 @@ const App: FC = () => {
     } else { // Add mode
         const contributionAmount = initialContribution || 0;
         
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, db.settings, async () => {
+        await db.transaction('rw', [db.investments, db.investmentTransactions, db.settings, db.transactions_v2, db.accounts], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1211,74 +1207,68 @@ const App: FC = () => {
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     
-    let itemType = 'transaction';
-    if ('person' in itemToDelete) itemType = 'debt';
-    else if ('investmentId' in itemToDelete) itemType = 'investment_transaction';
-    else if ('startDate' in itemToDelete) itemType = 'investment';
-    else if ('debtId' in itemToDelete ) itemType = 'installment'
-    
-
     if ('person' in itemToDelete) { // Debt
-        // Ensure installments are included in the same transaction to avoid
-        // multiple transactions that can cause liveQuery to emit intermediate states.
-        await db.transaction('rw', [db.transactionItems, db.debts, db.debtInstallements], async () => {
-            await db.transactionItems.where({ debtId: itemToDelete.id }).delete();
-            await db.debtInstallements.where({debtId: itemToDelete.id}).delete();
+        await db.transaction('rw', [db.debts, db.debtInstallements, db.transactions_v2, db.accounts], async () => {
+            // 1. Delete double-entry ledger records
+            await accountingAdapter.deleteTransactionsByDebtId(itemToDelete.id);
+            // 2. Delete the debt account (optional, but keep for now to avoid orphan accounts if no other refs exist)
+            // Note: In a full implementation, we might want to keep the account but mark it inactive.
+            // 3. Delete metadata
+            await db.debtInstallements.where({ debtId: itemToDelete.id }).delete();
             await db.debts.delete(itemToDelete.id);
         });
-    } else if ('investmentId' in itemToDelete) { // InvestmentTransaction
+    } else if ('investmentId' in itemToDelete) { // InvestmentTransaction (Metadata record)
         const txToDelete = itemToDelete as InvestmentTransaction;
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, async () => {
+        await db.transaction('rw', [db.investmentTransactions, db.transactions_v2], async () => {
+            // 1. Delete linked ledger record
+            await accountingAdapter.deleteTransactionsByInvestmentTransactionId(txToDelete.id);
+            // 2. Delete metadata
             await db.investmentTransactions.delete(txToDelete.id);
-            await db.transactionItems.where({ investmentTransactionId: txToDelete.id }).delete();
         });
     } else if ('startDate' in itemToDelete) { // Investment
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, async () => {
+        await db.transaction('rw', [db.investments, db.investmentTransactions, db.transactions_v2, db.accounts], async () => {
             const investmentIdToDelete = itemToDelete.id;
-            const childInvTxs = await db.investmentTransactions.where({ investmentId: investmentIdToDelete }).toArray();
-            const childInvTxIds = childInvTxs.map((tx: any) => tx.id);
-            
+            // 1. Delete all ledger records for this investment
+            await accountingAdapter.deleteTransactionsByInvestmentId(investmentIdToDelete);
+            // 2. Delete all transaction metadata
+            await db.investmentTransactions.where({ investmentId: investmentIdToDelete }).delete();
+            // 3. Delete the investment metadata
             await db.investments.delete(investmentIdToDelete);
-            if (childInvTxs.length > 0) {
-                await db.investmentTransactions.bulkDelete(childInvTxIds);
-                await db.transactionItems.where('investmentTransactionId').anyOf(childInvTxIds).delete();
-            }
         });
-    } else if ('debtId' in itemToDelete  && !('debtInstallmentId' in itemToDelete)){ // Installment
+    } else if ('debtId' in itemToDelete && !('debtInstallmentId' in itemToDelete)) { // Installment
         const installment = itemToDelete as DebtInstallment;
-        await db.transaction(
-          "rw",
-          db.debtInstallements,
-          db.transactionItems,
-          async () => {
+        await db.transaction('rw', [db.debtInstallements, db.transactions_v2], async () => {
+            // 1. Delete linked ledger record
+            const allTxns = await db.transactions_v2.toArray();
+            const idsToDelete = allTxns.filter(t => t.meta?.debtInstallmentId === installment.id).map(t => t.id);
+            if (idsToDelete.length > 0) {
+                await db.transactions_v2.bulkDelete(idsToDelete);
+            }
+            
+            // 2. Delete metadata
             await db.debtInstallements.delete(installment.id);
-            await db.transactionItems.where({
-              debtInstallmentId: installment.id
-            }).delete()
-          }
-        );
-    } else { // Transaction
+        });
+    } else { // Generic Transaction (Transfer or isolated Income/Expense)
         const transactionToDelete = itemToDelete as Transaction;
+        const idToDelete = transactionToDelete.id;
+        
         if (transactionToDelete.transferId) {
             const transferId = transactionToDelete.transferId;
-            const txsToDelete = await db.transactionItems.where({ transferId }).toArray();
-            const idsToDelete = txsToDelete.map((tx: any) => tx.id);
-            setAnimatingOutIds(prev => [...new Set([...prev, ...idsToDelete])]);
+            // Get all related IDs for animation
+            const txs = doubleEntryTxns?.filter(t => t.meta?.transferId === transferId) || [];
+            const idsToAnimate = txs.map(t => t.id);
+            
+            setAnimatingOutIds(prev => [...new Set([...prev, ...idsToAnimate])]);
             setTimeout(async () => {
-                await db.transactionItems.where({ transferId }).delete();
-                setAnimatingOutIds(prev => prev.filter(id => !idsToDelete.includes(id)));
+                await accountingAdapter.deleteTransactionsByTransferId(transferId);
+                setAnimatingOutIds(prev => prev.filter(id => !idsToAnimate.includes(id)));
             }, 300);
-            // Also delete from v2 (single transfer txn)
-            try { await accountingAdapter.deleteTransaction(transactionToDelete.id); } catch {}
         } else {
-             const idToDelete = transactionToDelete.id;
             setAnimatingOutIds(prev => [...prev, idToDelete]);
             setTimeout(async () => {
-                await db.transactionItems.delete(idToDelete);
+                await accountingAdapter.deleteTransaction(idToDelete);
                 setAnimatingOutIds(prev => prev.filter(id => id !== idToDelete));
             }, 300);
-            // Also delete from v2
-            try { await accountingAdapter.deleteTransaction(idToDelete); } catch {}
         }
     }
     
@@ -1288,7 +1278,7 @@ const App: FC = () => {
   const handleSettleDebt = async (data: { settlementDate: string; createTransaction: boolean; wallet: string }) => {
     if (!settlingDebt) return;
 
-    await db.transaction('rw', db.transactionItems, db.debts, db.debtInstallements, async () => {
+    await db.transaction('rw', [db.debts, db.debtInstallements, db.transactions_v2], async () => {
 
         // Calculate remaining amount based on installments
         const installments = await db.debtInstallements.where({
@@ -1297,9 +1287,7 @@ const App: FC = () => {
         const paidAmount = (installments || []).reduce((sum, inst) => sum + inst.amount, 0);
         const remainingAmount = settlingDebt.amount - paidAmount;
 
-
-
-        // Create a final settlement installment
+        // Create a final settlement installment metadata
         const finalInstallment: DebtInstallment = {
           amount: remainingAmount,
           date: data.settlementDate,
@@ -1310,22 +1298,7 @@ const App: FC = () => {
         await db.debtInstallements.add(finalInstallment);
   
         if (data.createTransaction && remainingAmount > 0) {
-            const newTransaction: Transaction = {
-                id: crypto.randomUUID(),
-                type: settlingDebt.type === DebtType.LENT ? TransactionType.INCOME : TransactionType.EXPENSE,
-                amount: remainingAmount,
-                date: data.settlementDate,
-                description: settlingDebt.type === DebtType.LENT 
-                    ? `Settled debt from ${settlingDebt.person}` 
-                    : `Paid back debt to ${settlingDebt.person}`,
-                wallet: data.wallet,
-                debtId: settlingDebt.id,
-                isReconciliation: false,
-                debtInstallmentId: finalInstallment.id
-            };
-            await db.transactionItems.add(newTransaction);
-
-            // Also write settlement to double-entry
+            // Write settlement to double-entry ledger (PRIMARY TRUTH)
             try {
               const dType = settlingDebt.type === DebtType.LENT ? 'lent' : 'owed';
               const wAccId = resolveWalletAccId(data.wallet);
@@ -1386,7 +1359,7 @@ const App: FC = () => {
   const handleSellInvestment = async (data: { wallet: string; createTransaction: boolean; sellDate: string }) => {
     if (!sellingInvestment) return;
 
-    await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.investments, async () => {
+    await db.transaction('rw', [db.investmentTransactions, db.investments, db.transactions_v2], async () => {
         const finalWithdrawal: InvestmentTransaction = {
             id: crypto.randomUUID(),
             investmentId: sellingInvestment.id,
@@ -1398,19 +1371,7 @@ const App: FC = () => {
         await db.investmentTransactions.add(finalWithdrawal);
 
         if (data.createTransaction) {
-            const newTransaction: Transaction = {
-                id: crypto.randomUUID(),
-                type: TransactionType.INCOME,
-                amount: sellingInvestment.currentValue,
-                date: data.sellDate,
-                description: `Sold investment: ${sellingInvestment.name}`,
-                wallet: data.wallet,
-                investmentTransactionId: finalWithdrawal.id,
-                isReconciliation: false,
-            };
-            await db.transactionItems.add(newTransaction);
-
-            // Also write to double-entry
+            // Write to double-entry ledger (PRIMARY TRUTH)
             try {
               const wAccId = resolveWalletAccId(data.wallet);
               await accountingAdapter.recordInvestmentSell({
@@ -1419,6 +1380,7 @@ const App: FC = () => {
                 date: data.sellDate,
                 walletAccountId: wAccId,
                 description: `Sold investment: ${sellingInvestment.name}`,
+                investmentTransactionId: finalWithdrawal.id,
               });
             } catch (e) { console.error('v2 investment sell failed:', e); }
         }
@@ -1540,116 +1502,72 @@ const App: FC = () => {
     periodicOperationalIncome,
     periodicOperationalExpense,
   } = useMemo(() => {
-    const source = presentedTransactions ?? transactions;
-    if (!source) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
+    if (!doubleEntryTxns) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
     
-    let periodStartDate: Date;
-    let periodEndDate: Date;
+    let start: Date;
+    let end: Date;
 
-    // 1. Define the Period Window
     switch (cashFlowFilter.period) {
-      case FilterPeriod.TODAY: {
-        periodStartDate = new Date(today);
-        periodStartDate.setHours(0, 0, 0, 0);
-        periodEndDate = new Date(today);
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.TODAY:
+        start = new Date(today);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.THIS_MONTH: {
-        periodStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        // We cap the end date at 'today' to automatically exclude future transactions
-        periodEndDate = new Date(today); 
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.THIS_MONTH:
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.LAST_MONTH: {
-        periodStartDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        periodEndDate = new Date(today.getFullYear(), today.getMonth(), 0);
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.LAST_MONTH:
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.CUSTOM: {
-        periodStartDate = new Date(filter.startDate + 'T00:00:00');
-        periodEndDate = new Date(filter.endDate + 'T23:59:59');
+      case FilterPeriod.CUSTOM:
+        start = new Date(cashFlowFilter.startDate + 'T00:00:00');
+        end = new Date(cashFlowFilter.endDate + 'T23:59:59');
         break;
-      }
       case FilterPeriod.ALL:
       default:
-        periodStartDate = new Date(0);
-        periodEndDate = new Date(today); // Cap 'All' at today as well
-        periodEndDate.setHours(23, 59, 59, 999);
+        start = new Date(0);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
     }
 
-    let income = 0;
-    let expense = 0;
-
-    source.forEach(tx => {
-      // Filter Operational Types (Exclude irrelevant types)
-      if (
-        tx.isReconciliation || 
-        tx.transferId || 
-        tx.debtId || 
-        tx.investmentTransactionId
-      ) return;
-
-      const txDate = new Date(tx.date + 'T00:00:00');
-
-      if (txDate >= periodStartDate && txDate <= periodEndDate && txDate <= today) {
-        if (tx.type === 'income') {
-            income += tx.amount;
-        } else {
-            expense += tx.amount;
-        }
-      }
-    });
+    const { income, expense } = computePeriodicFlow(
+      doubleEntryTxns,
+      { start, end },
+      ['transfer', 'adjustment', 'debt_create', 'investment_buy', 'investment_sell']
+    );
 
     return {
         periodicOperationalIncome: income,
         periodicOperationalExpense: expense 
     };
-  }, [cashFlowFilter, presentedTransactions, transactions, today]);
+  }, [cashFlowFilter, doubleEntryTxns, today]);
   
-  
-
   const { currentBalance, projectedBalance, globalBalance } = useMemo(() => {
-    const source = presentedTransactions ?? transactions;
-    if (!source)
+    if (!doubleEntryTxns || !walletAccounts)
       return { currentBalance: 0, projectedBalance: 0, globalBalance: 0 };
 
-    let current = 0;
-    let projected = 0;
-    let global = 0;
+    const activeWallets = (filter.wallet && filter.wallet !== 'All Wallets' && filter.wallet !== 'all') 
+      ? walletAccounts.filter(a => a.name === filter.wallet) 
+      : walletAccounts;
 
-    const relevantTransactions =
-      filter.wallet === "all"
-        ? source
-        : source.filter((tx) => tx.wallet === filter.wallet);
-
-    relevantTransactions.forEach((tx) => {
-      const txDate = new Date(tx.date + "T00:00:00");
-      const amount =
-        tx.type === 'income' ? tx.amount : -tx.amount;
-      projected += amount;
-      if (txDate <= today) current += amount;
-    });
-
-    // Calculate global balance (all wallets) for Health check
-    source.forEach((tx) => {
-      const txDate = new Date(tx.date + "T00:00:00");
-      if (txDate <= today) {
-        const amount =
-          tx.type === 'income' ? tx.amount : -tx.amount;
-        global += amount;
-      }
-    });
+    const current = computeTotalWalletBalance(doubleEntryTxns, activeWallets, { start: new Date(0), end: today });
+    const projected = computeTotalWalletBalance(doubleEntryTxns, activeWallets); // All time
+    
+    // Global balance across ALL wallet accounts (for Health check)
+    const global = computeTotalWalletBalance(doubleEntryTxns, walletAccounts, { start: new Date(0), end: today });
 
     return {
       currentBalance: current,
       projectedBalance: projected,
       globalBalance: global,
     };
-  }, [presentedTransactions, transactions, filter.wallet, today]);
+  }, [doubleEntryTxns, walletAccounts, filter.wallet, today]);
 
   const filteredDebts = useMemo(() => {
     if (!debts) return [];
@@ -1839,7 +1757,6 @@ const App: FC = () => {
   
   const handleExportAllData = async () => {
     // Fetch data directly from DB to ensure export works even when UI state (like during migration) isn't populated
-    const dbTransactions = await db.transactionItems.toArray();
     const dbDebts = await db.debts.toArray();
     const dbDebtInstallments = await db.debtInstallements.toArray();
     const dbInvestments = await db.investments.toArray();
@@ -1847,7 +1764,9 @@ const App: FC = () => {
     const dbAccounts = await db.accounts.toArray();
     const dbDoubleEntryTransactions = await db.transactions_v2.toArray();
 
-    const transactionCSV = generateTransactionsCSV(dbTransactions);
+    // Removed legacy transaction export; data exists fully in doubleEntryTransactionsCSV
+    const transactionCSV = '';
+
     const debtCSV = generateDebtsCSV(dbDebts);
     const debtInstallmentsCSV = generateDebtInstallmentsCSV(dbDebtInstallments);
     const investmentCSV = generateInvestmentsCSV(dbInvestments);
@@ -1942,7 +1861,7 @@ const App: FC = () => {
                 await db.investmentTransactions.bulkPut(validInvestmentTxs);
             }
 
-            // Process Transactions
+            // Process Transactions (Legacy import trigger)
             if (importedTransactions.length > 0) {
                 const existingTxIds = new Set(await db.transactionItems.where('id').anyOf(importedTransactions.map(i => i.id)).primaryKeys());
                 importedTransactions.forEach(tx => {
@@ -1950,7 +1869,10 @@ const App: FC = () => {
                     else resultSummary.tx.added++;
                 });
                 await db.transactionItems.bulkPut(importedTransactions);
+                // Force migration to run again to convert these legacy transactions into double-entry format
+                await db.settings.put({ key: 'migrationV3Complete', value: false });
             }
+
 
             // Process Debts
             if (importedDebts.length > 0) {

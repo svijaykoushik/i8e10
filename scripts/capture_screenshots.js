@@ -3,6 +3,9 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
+// @deprecated: This script seeds the legacy `transactionItems` table. It does NOT seed `transactions_v2` (double-entry). 
+// Running this will require the app to perform a migration (migrationV3) upon load to capture screenshots with double-entry.
+
 const SCREENSHOTS_DIR = path.resolve('public/screenshots');
 if (!fs.existsSync(SCREENSHOTS_DIR)) {
     fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });

@@ -271,6 +271,7 @@ interface DBTransaction {
 
 interface DB {
   // 1. Table Properties with strict types
+  /** @deprecated Replaced by transactions_v2 */
   transactionItems: TableProxy<Transaction>;
   debts: TableProxy<Debt>;
   investments: TableProxy<Investment>;

@@ -358,3 +358,48 @@ export async function updateTransaction(txn: DoubleEntryTransaction): Promise<vo
 export async function deleteTransaction(id: string): Promise<void> {
   await db.transactions_v2.delete(id);
 }
+
+/**
+ * Delete all double-entry transactions linked to a specific debt.
+ */
+export async function deleteTransactionsByDebtId(debtId: string): Promise<void> {
+  const allTxns = await db.transactions_v2.toArray();
+  const ids = allTxns.filter(t => t.meta?.debtId === debtId).map(t => t.id);
+  if (ids.length > 0) {
+    await db.transactions_v2.bulkDelete(ids);
+  }
+}
+
+/**
+ * Delete all double-entry transactions linked to a specific investment.
+ */
+export async function deleteTransactionsByInvestmentId(investmentId: string): Promise<void> {
+  const allTxns = await db.transactions_v2.toArray();
+  const ids = allTxns.filter(t => t.meta?.investmentId === investmentId).map(t => t.id);
+  if (ids.length > 0) {
+    await db.transactions_v2.bulkDelete(ids);
+  }
+}
+
+/**
+ * Delete all double-entry transactions linked to a specific investment transaction metadata.
+ */
+export async function deleteTransactionsByInvestmentTransactionId(invTxId: string): Promise<void> {
+  const allTxns = await db.transactions_v2.toArray();
+  const ids = allTxns.filter(t => t.meta?.investmentTransactionId === invTxId).map(t => t.id);
+  if (ids.length > 0) {
+    await db.transactions_v2.bulkDelete(ids);
+  }
+}
+
+/**
+ * Delete all double-entry transactions linked to a specific transfer.
+ */
+export async function deleteTransactionsByTransferId(transferId: string): Promise<void> {
+  const allTxns = await db.transactions_v2.toArray();
+  const ids = allTxns.filter(t => t.meta?.transferId === transferId).map(t => t.id);
+  if (ids.length > 0) {
+    await db.transactions_v2.bulkDelete(ids);
+  }
+}
+

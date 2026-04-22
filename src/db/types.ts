@@ -81,6 +81,7 @@ export interface AppSetting {
 
 export interface DatabaseSchema {
   // Legacy (retained in v3, removed in v4)
+  /** @deprecated Replaced by transactions_v2 */
   transactionItems: Table<Transaction, string>;
   debts: Table<Debt, string>;
   investments: Table<Investment, string>;
