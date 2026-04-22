@@ -141,10 +141,47 @@ export function presentForUI(
 
 /**
  * Batch convert for list views.
+ * Transfers are exploded into two separate transactions to maintain legacy behavior:
+ * 1. An expense from the source wallet.
+ * 2. An income to the destination wallet.
  */
 export function presentAllForUI(
   txns: DoubleEntryTransaction[],
   accountMap: Map<string, Account>
 ): PresentedTransaction[] {
-  return txns.map((txn) => presentForUI(txn, accountMap));
+  const result: PresentedTransaction[] = [];
+
+  for (const txn of txns) {
+    if (txn.meta.kind === 'transfer') {
+      const debitEntry = txn.entries.find((e) => e.type === 'debit');
+      const creditEntry = txn.entries.find((e) => e.type === 'credit');
+      const toWallet = debitEntry ? accountMap.get(debitEntry.accountId)?.name : undefined;
+      const fromWallet = creditEntry ? accountMap.get(creditEntry.accountId)?.name : undefined;
+
+      // Leg 1: Expense from source
+      result.push({
+        ...presentForUI(txn, accountMap),
+        id: `${txn.id}_src`,
+        type: TransactionType.EXPENSE,
+        wallet: fromWallet,
+        description: txn.note || `Transfer to ${toWallet || 'Unknown'}`,
+      });
+
+      // Leg 2: Income to destination
+      result.push({
+        ...presentForUI(txn, accountMap),
+        id: `${txn.id}_dest`,
+        type: TransactionType.INCOME,
+        wallet: toWallet,
+        description: txn.note || `Transfer from ${fromWallet || 'Unknown'}`,
+      });
+
+
+
+    } else {
+      result.push(presentForUI(txn, accountMap));
+    }
+  }
+
+  return result;
 }

@@ -657,8 +657,9 @@ const App: FC = () => {
     }
   };
   
-  const handleRecoveryPhraseSaved = () => {
+  const handleRecoveryPhraseSaved = async () => {
     setPendingRecoveryPhrase(null);
+    await runMigrationV3();
     setAppStatus('UNLOCKED');
   };
 

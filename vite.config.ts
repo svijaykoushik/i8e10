@@ -17,6 +17,13 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       setupFiles: ["./tests/setup.ts"],
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/cypress/**',
+        '**/.{idea,git,cache,output,temp}/**',
+        '**/*.e2e.test.ts'
+      ],
     },
     define: {
       "process.env.API_KEY": JSON.stringify(env.GEMINI_API_KEY),

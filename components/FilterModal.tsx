@@ -69,7 +69,7 @@ const FilterModal: FC<FilterModalProps> = ({ isOpen, onClose, onApply, onExport,
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Filter Transactions" footer={footer}>
-      <div className="space-y-4">
+      <div id="filter-modal" className="space-y-4">
         <div>
             <label htmlFor="filter-period" className={labelClasses}>Time Period / காலம்</label>
             <select
