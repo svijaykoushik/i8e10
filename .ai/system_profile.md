@@ -22,6 +22,6 @@ i8e10 is a secure, private, offline-first personal finance tracker built as a Pr
 ## Key Directories
 -   `src/components`: React components (UI and feature-specific)
 -   `src/contexts`: React Context definitions
--   `src/db`: Database schema, configuration, and middleware (encryption)
--   `src/utils`: Utility functions (crypto, CSV import/export, formatting)
--   `src/types.ts`: Core type definitions
+-   `src/db`: Database schema and configuration.
+-   `utils/`: Core utilities (custom db wrapper, crypto service, importers/exporters).
+-   `types.ts`: Core type definitions.
