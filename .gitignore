@@ -4,4 +4,14 @@ venv/
 __pycache__/
 *.py[cod]
 dist
-playwright-report
+
+# Playwright test output and reports
+playwright-report/
+test-results/
+blob-report/
+
+# Playwright temporary files/caching
+.playwright/
+
+# (Optional) If you are saving authentication state to a file/folder
+playwright/.auth/
