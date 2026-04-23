@@ -39,6 +39,22 @@ export async function saveInvestmentTransaction(params: {
         break;
     }
 
+    if (investment) {
+      const amountDiff = transactionData.amount - (transactionData.id ? (await db.investmentTransactions.get(transactionData.id))?.amount || 0 : 0);
+      let newValue = investment.currentValue;
+      
+      if (transactionData.type === InvestmentTransactionType.CONTRIBUTION) {
+        newValue += amountDiff;
+      } else if (transactionData.type === InvestmentTransactionType.WITHDRAWAL) {
+        newValue -= amountDiff;
+      }
+      // Dividends usually don't increase the asset value themselves, they are payouts.
+      
+      if (newValue !== investment.currentValue) {
+        await db.investments.update(investment.id, { currentValue: newValue });
+      }
+    }
+
     if (transactionData.id) {
       // Edit mode
       await db.investmentTransactions.update(investmentTransactionId, transactionData);
