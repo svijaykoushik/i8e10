@@ -14,6 +14,13 @@ This directory contains structured documentation to assist AI agents in understa
 | [**UX Guidelines**](./ux-guidelines.md) | Principles for low-friction entry, bilingual support, and human-centric data. |
 | [**Environment Setup**](./env_setup.md) | Configuration for environment variables and local setup. |
 
+## Folders
+
+| Folder | Description |
+| :--- | :--- |
+| [**Skills**](skills/) | Contains advanced, reusable skills.|
+
+
 ## Usage
 AI agents should consult these files to:
 -   Understand the "offline-first" constraint before suggesting backend integrations.
