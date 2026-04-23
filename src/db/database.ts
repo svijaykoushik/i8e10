@@ -9,6 +9,7 @@ export class CustomDatabase implements DatabaseLike{
     {};
   private static instance: CustomDatabase;
   private transactionDepth = 0; // Track nested transaction depth
+  private openingPromise?: Promise<void>;
 
   private constructor() {
     this.eventEmitter = new EventEmitter();
@@ -48,11 +49,15 @@ export class CustomDatabase implements DatabaseLike{
 
   async open(): Promise<void> {
     if (this.db) return;
+    if (this.openingPromise) return this.openingPromise;
 
-    return new Promise((resolve, reject) => {
+    this.openingPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open("i8e10DB", 3);
 
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+        this.openingPromise = undefined;
+        reject(request.error);
+      };
       request.onsuccess = () => {
         this.db = request.result;
 
@@ -60,11 +65,14 @@ export class CustomDatabase implements DatabaseLike{
         if (this.db) {
           this.db.onversionchange = () => {
             this.db!.close();
+            this.db = undefined;
+            this.openingPromise = undefined;
             reject(
               "Database version changed in another tab, connection closed"
             );
           };
         }
+        this.openingPromise = undefined;
         resolve();
       };
 

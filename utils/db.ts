@@ -305,6 +305,7 @@ interface DB {
   // Methods added at the end of the file
   delete(): Promise<void>;
   open(): Promise<void>;
+  close(): Promise<void>;
 }
 
 // Transaction Callback Type
@@ -423,6 +424,15 @@ export const db: DB = {
       await coreDb.open();
     } catch (error) {
       console.error("Failed to open database:", error);
+      throw error;
+    }
+  },
+
+  async close() {
+    try {
+      await coreDb.close();
+    } catch (error) {
+      console.error("Failed to close database:", error);
       throw error;
     }
   },
