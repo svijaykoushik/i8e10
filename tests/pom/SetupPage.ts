@@ -48,6 +48,8 @@ export class SetupPage extends BasePage {
     await this.clearData();
     await this.setupPassword(password);
     await this.completeRecoveryFlow();
+    // Wait for migration and initial state to settle
+    await this.page.waitForTimeout(2000);
     await this.skipOnboarding();
     await this.waitForMainView();
   }

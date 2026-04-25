@@ -320,7 +320,7 @@ const App: FC = () => {
         wallets: walletNames.length > 0 ? walletNames : (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
         onboardingCompleted: settingsMap.onboardingCompleted ?? false,
         defaultFilterPeriod: settingsMap.defaultFilterPeriod ?? FilterPeriod.THIS_MONTH,
-        defaultWallet: settingsMap.defaultWallet ?? (walletAccounts.length > 0 ? walletAccounts[0].id : 'Cash / ரொக்கம்'),
+        defaultWallet: settingsMap.defaultWallet ?? 'all',
         lastBackupDate: settingsMap.lastBackupDate ?? null,
         backupReminderDismissedUntil: settingsMap.backupReminderDismissedUntil ?? null,
         appFirstUseDate: settingsMap.appFirstUseDate ?? null,
@@ -401,7 +401,7 @@ const App: FC = () => {
     period: defaultFilterPeriod,
     startDate: getLocalDateString(),
     endDate: getLocalDateString(),
-    wallet: correctedDefaultWallet,
+    wallet: 'all',
     transactionType: TransactionFilterType.ALL,
   });
   
@@ -1549,18 +1549,34 @@ const App: FC = () => {
   }, [cashFlowFilter, doubleEntryTxns, today]);
   
   const { currentBalance, projectedBalance, globalBalance } = useMemo(() => {
-    if (!doubleEntryTxns || !walletAccounts)
+    if (!doubleEntryTxns || !walletAccounts) {
+      console.log("[BalanceDebug] Missing data:", { hasTxns: !!doubleEntryTxns, accountsCount: walletAccounts?.length });
       return { currentBalance: 0, projectedBalance: 0, globalBalance: 0 };
+    }
 
     const activeWallets = (filter.wallet && filter.wallet !== 'All Wallets' && filter.wallet !== 'all') 
-      ? walletAccounts.filter(a => a.name === filter.wallet) 
+      ? walletAccounts.filter(a => a.id === filter.wallet || a.name === filter.wallet) 
       : walletAccounts;
 
-    const current = computeTotalWalletBalance(doubleEntryTxns, activeWallets, { start: new Date(0), end: today });
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
+
+    const current = computeTotalWalletBalance(doubleEntryTxns, activeWallets, { start: new Date(0), end: endOfToday });
     const projected = computeTotalWalletBalance(doubleEntryTxns, activeWallets); // All time
     
-    // Global balance across ALL wallet accounts (for Health check)
-    const global = computeTotalWalletBalance(doubleEntryTxns, walletAccounts, { start: new Date(0), end: today });
+
+
+    const global = computeTotalWalletBalance(doubleEntryTxns, walletAccounts, { start: new Date(0), end: endOfToday });
+
+    console.log("[BalanceDebug] Calculated:", { 
+      txnsCount: doubleEntryTxns.length, 
+      walletsCount: walletAccounts.length,
+      current,
+      global,
+      filterWallet: filter.wallet,
+      walletIds: walletAccounts.map(a => a.id),
+      endOfToday: endOfToday.toISOString()
+    });
 
     return {
       currentBalance: current,
@@ -2385,3 +2401,7 @@ const App: FC = () => {
 };
 
 export default App;
+
+if (typeof window !== 'undefined') {
+  (window as any).db = db;
+}

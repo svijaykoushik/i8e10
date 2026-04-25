@@ -10,32 +10,37 @@ export class BasePage {
   async clearData() {
     await this.page.evaluate(async () => {
       localStorage.clear();
-      const databases = await window.indexedDB.databases();
-      for (const db of databases) {
-        if (db.name) {
-          const request = window.indexedDB.open(db.name);
-          request.onsuccess = (event: any) => {
-            const d = event.target.result;
-            d.close();
-            window.indexedDB.deleteDatabase(db.name);
-          };
+      
+      // Try to use the app's db delete (truncate) if available
+      if ((window as any).db && typeof (window as any).db.delete === 'function') {
+        try {
+          await (window as any).db.delete();
+        } catch (e) {
+          console.error("Error calling db.delete():", e);
         }
       }
+
+      // Instead of deleting the whole DB (which can be blocked), just clear sessionStorage too
+      sessionStorage.clear();
     });
+    
     await this.page.reload();
-    await this.page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 10000 }).catch(() => {});
+    await this.page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
   }
 
   async getTotalBalance() {
-    const text = await this.page.locator('.text-5xl.font-bold').textContent();
+    const locator = this.page.locator('.text-5xl.font-bold').first();
+    await expect(locator).toBeVisible({ timeout: 10000 });
+    const text = await locator.textContent();
     return parseFloat(text?.replace(/[^\d.-]/g, '') || '0');
   }
 
-  async navigateTo(tab: 'Transactions' | 'Debts' | 'Investments') {
-    await this.page.getByRole('button', { name: tab, exact: true }).click();
+  async navigateTo(tab: 'Transactions' | 'Debts' | 'Investments' | 'Health') {
+    await this.page.getByRole('button', { name: new RegExp(tab, 'i') }).click();
   }
 
   async waitForMainView() {
-    await expect(this.page.locator('text=Total Balance / மொத்த இருப்பு')).toBeVisible({ timeout: 10000 });
+    await expect(this.page.locator('text=Total Balance / மொத்த இருப்பு')).toBeVisible({ timeout: 15000 });
+    await expect(this.page.getByLabel(/Add (Expense|Debt|Investment|Item)/i)).toBeVisible({ timeout: 10000 });
   }
 }

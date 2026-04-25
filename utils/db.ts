@@ -399,6 +399,7 @@ export const db: DB = {
   // passthrough for operations expected by the app
   async delete() {
     try {
+      await coreDb.open();
       if (coreDb.deleteStore) {
         const allTables: TableName[] = [
           "transactionItems",
