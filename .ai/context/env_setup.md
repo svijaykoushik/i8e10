@@ -10,6 +10,7 @@ None are strictly required for the core application to run in offline mode.
 -   `GEMINI_API_KEY`: Required for the "Bulk Add" AI feature.
     -   Loaded via `process.env.API_KEY` or `process.env.GEMINI_API_KEY` in `vite.config.ts`.
     -   Should be set in `.env` (local) or your deployment platform variables.
+-   `APP_VERSION`: Injected statically by Vite via `package.json` version field.
 
 ## Local Setup
 1.  Clone repo.

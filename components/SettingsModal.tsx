@@ -10,12 +10,12 @@ interface SettingsModalProps {
   onClose: () => void;
   currentDefault: FilterPeriod;
   currentDefaultWallet: string;
-  wallets: string[];
+  walletAccounts: { id: string, name: string }[];
   currentDeficitThreshold: number;
   onSave: (
     newDefault: FilterPeriod,
-    newWallets: string[],
-    newDefaultWallet: string,
+    walletUpdates: { added: string[], renamed: { id: string, newName: string }[], removed: string[] },
+    newDefaultWalletId: string,
     newDeficitThreshold: number
   ) => void;
   onShowOnboarding: () => void;
@@ -31,7 +31,7 @@ const SettingsModal: FC<SettingsModalProps> = ({
   onClose,
   currentDefault,
   currentDefaultWallet,
-  wallets,
+  walletAccounts,
   currentDeficitThreshold,
   onSave,
   onShowOnboarding,
@@ -43,7 +43,9 @@ const SettingsModal: FC<SettingsModalProps> = ({
 }) => {
   const [selectedPeriod, setSelectedPeriod] = useState<FilterPeriod>(currentDefault);
   const [selectedWallet, setSelectedWallet] = useState<string>(currentDefaultWallet);
-  const [editableWallets, setEditableWallets] = useState<string[]>([]);
+  const [editableWallets, setEditableWallets] = useState<{ id: string, name: string, isNew?: boolean, isDeleted?: boolean, originalName?: string }[]>([]);
+  const [editingWalletId, setEditingWalletId] = useState<string | null>(null);
+  const [editingWalletName, setEditingWalletName] = useState<string>('');
   const [newWallet, setNewWallet] = useState('');
   const [deficitThreshold, setDeficitThreshold] = useState<string>(currentDeficitThreshold.toString());
   const { theme, toggleTheme } = useTheme();
@@ -56,37 +58,65 @@ const SettingsModal: FC<SettingsModalProps> = ({
     if (isOpen) {
       setSelectedPeriod(currentDefault);
       setSelectedWallet(currentDefaultWallet);
-      setEditableWallets(wallets);
+      setEditableWallets(walletAccounts.map(w => ({ ...w, originalName: w.name })));
       setDeficitThreshold(currentDeficitThreshold.toString());
       setNewWallet('');
+      setEditingWalletId(null);
     }
-  }, [isOpen, currentDefault, currentDefaultWallet, wallets, currentDeficitThreshold]);
+  }, [isOpen, currentDefault, currentDefaultWallet, walletAccounts, currentDeficitThreshold]);
 
   const handleSave = () => {
     // Fallback to 'all' if the selected default wallet was deleted during this session
-    const finalSelectedWallet = (selectedWallet === 'all' || editableWallets.includes(selectedWallet))
+    const activeWallets = editableWallets.filter(w => !w.isDeleted);
+    const finalSelectedWallet = (selectedWallet === 'all' || activeWallets.some(w => w.id === selectedWallet))
       ? selectedWallet
       : 'all';
 
     const finalThreshold = parseFloat(deficitThreshold);
     const validThreshold = isNaN(finalThreshold) ? 0 : Math.abs(finalThreshold);
 
-    onSave(selectedPeriod, editableWallets, finalSelectedWallet, validThreshold);
+    const added = editableWallets.filter(w => w.isNew && !w.isDeleted).map(w => w.name);
+    const renamed = editableWallets.filter(w => !w.isNew && !w.isDeleted && w.name !== w.originalName).map(w => ({ id: w.id, newName: w.name }));
+    const removed = editableWallets.filter(w => !w.isNew && w.isDeleted).map(w => w.id);
+
+    onSave(selectedPeriod, { added, renamed, removed }, finalSelectedWallet, validThreshold);
   };
 
   const handleAddWallet = () => {
-    if (newWallet.trim() && !editableWallets.includes(newWallet.trim())) {
-      setEditableWallets([...editableWallets, newWallet.trim()]);
+    if (newWallet.trim() && !editableWallets.some(w => !w.isDeleted && w.name.toLowerCase() === newWallet.trim().toLowerCase())) {
+      setEditableWallets([...editableWallets, { id: `temp_${Date.now()}`, name: newWallet.trim(), isNew: true }]);
       setNewWallet('');
+    } else if (newWallet.trim()) {
+      onAlert("Duplicate Wallet", "A wallet with this name already exists.");
     }
   };
 
-  const handleDeleteWallet = (walletToDelete: string) => {
-    if (editableWallets.length > 1) {
-        setEditableWallets(editableWallets.filter(w => w !== walletToDelete));
+  const handleDeleteWallet = (walletId: string) => {
+    const activeWalletsCount = editableWallets.filter(w => !w.isDeleted).length;
+    if (activeWalletsCount > 1) {
+        setEditableWallets(editableWallets.map(w => w.id === walletId ? { ...w, isDeleted: true } : w));
     } else {
         onAlert("Action Not Allowed", "You must have at least one wallet.");
     }
+  };
+
+  const startRenameWallet = (wallet: { id: string, name: string }) => {
+    setEditingWalletId(wallet.id);
+    setEditingWalletName(wallet.name);
+  };
+
+  const saveRenameWallet = (walletId: string) => {
+    if (!editingWalletName.trim()) {
+        setEditingWalletId(null);
+        return;
+    }
+    // Check for duplicates
+    if (editableWallets.some(w => !w.isDeleted && w.id !== walletId && w.name.toLowerCase() === editingWalletName.trim().toLowerCase())) {
+        onAlert("Duplicate Wallet", "A wallet with this name already exists.");
+        return;
+    }
+    setEditableWallets(editableWallets.map(w => w.id === walletId ? { ...w, name: editingWalletName.trim() } : w));
+    setEditingWalletId(null);
   };
 
   const handleImportClick = () => {
@@ -189,8 +219,8 @@ const SettingsModal: FC<SettingsModalProps> = ({
               className={selectClasses}
             >
               <option value="all">All Wallets / அனைத்தும்</option>
-              {editableWallets.map(wallet => (
-                <option key={wallet} value={wallet}>{wallet}</option>
+              {editableWallets.filter(w => !w.isDeleted).map(wallet => (
+                <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
               ))}
             </select>
           </div>
@@ -228,12 +258,34 @@ const SettingsModal: FC<SettingsModalProps> = ({
                 Add or remove wallets (e.g., Cash, Bank).
             </p>
             <div className="mt-2 space-y-2">
-                {editableWallets.map(wallet => (
-                    <div key={wallet} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-2 rounded-lg">
-                        <span className="text-slate-800 dark:text-slate-100">{wallet}</span>
-                        <button onClick={() => handleDeleteWallet(wallet)} className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                        </button>
+                {editableWallets.filter(w => !w.isDeleted).map(wallet => (
+                    <div key={wallet.id} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-2 rounded-lg gap-2">
+                        {editingWalletId === wallet.id ? (
+                            <input
+                                type="text"
+                                value={editingWalletName}
+                                onChange={(e) => setEditingWalletName(e.target.value)}
+                                className={`${inputBaseClasses} flex-1 py-1`}
+                                autoFocus
+                                onBlur={() => saveRenameWallet(wallet.id)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') saveRenameWallet(wallet.id);
+                                    if (e.key === 'Escape') setEditingWalletId(null);
+                                }}
+                            />
+                        ) : (
+                            <span className="text-slate-800 dark:text-slate-100 flex-1 truncate">{wallet.name}</span>
+                        )}
+                        <div className="flex items-center">
+                            {editingWalletId !== wallet.id && (
+                                <button onClick={() => startRenameWallet(wallet)} className="p-1 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-full hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors mr-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                                </button>
+                            )}
+                            <button onClick={() => handleDeleteWallet(wallet.id)} className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-500 rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>

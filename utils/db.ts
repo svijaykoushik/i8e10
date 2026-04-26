@@ -6,6 +6,8 @@ import type {
   InvestmentTransaction,
   DebtInstallment,
 } from "../types";
+import type { Account } from "../src/db/accounts";
+import type { DoubleEntryTransaction } from "../src/db/doubleEntryTypes";
 import type {
   AppSetting,
   DatabaseSchema,
@@ -26,6 +28,8 @@ type Model =
   | Investment
   | InvestmentTransaction
   | DebtInstallment
+  | Account
+  | DoubleEntryTransaction
   | AppSetting;
 
 // Small helper that normalizes access to core table
@@ -233,8 +237,11 @@ class TableProxy<T extends Model> {
 type TableName =
   | "transactionItems"
   | "debts"
+  | "debtInstallments"
   | "investments"
   | "investmentTransactions"
+  | "accounts"
+  | "transactions_v2"
   | "settings";
 
 interface DBTransaction {
@@ -264,11 +271,14 @@ interface DBTransaction {
 
 interface DB {
   // 1. Table Properties with strict types
+  /** @deprecated Replaced by transactions_v2 */
   transactionItems: TableProxy<Transaction>;
   debts: TableProxy<Debt>;
   investments: TableProxy<Investment>;
   investmentTransactions: TableProxy<InvestmentTransaction>;
   debtInstallements: TableProxy<DebtInstallment>;
+  accounts: TableProxy<Account>;
+  transactions_v2: TableProxy<DoubleEntryTransaction>;
   settings: TableProxy<AppSetting>;
 
   // A helper structure to map names to proxies, useful for transaction overloads
@@ -277,6 +287,8 @@ interface DB {
     debts: TableProxy<Debt>;
     investments: TableProxy<Investment>;
     investmentTransactions: TableProxy<InvestmentTransaction>;
+    accounts: TableProxy<Account>;
+    transactions_v2: TableProxy<DoubleEntryTransaction>;
     settings: TableProxy<AppSetting>;
   };
 
@@ -293,6 +305,7 @@ interface DB {
   // Methods added at the end of the file
   delete(): Promise<void>;
   open(): Promise<void>;
+  close(): Promise<void>;
 }
 
 // Transaction Callback Type
@@ -310,6 +323,8 @@ export const db: DB = {
   investmentTransactions: new TableProxy<InvestmentTransaction>(
     "investmentTransactions"
   ),
+  accounts: new TableProxy<Account>("accounts"),
+  transactions_v2: new TableProxy<DoubleEntryTransaction>("transactions_v2"),
   settings: new TableProxy<AppSetting>("settings"),
 
   // Helper object for table properties
@@ -320,6 +335,8 @@ export const db: DB = {
     investmentTransactions: new TableProxy<InvestmentTransaction>(
       "investmentTransactions"
     ),
+    accounts: new TableProxy<Account>("accounts"),
+    transactions_v2: new TableProxy<DoubleEntryTransaction>("transactions_v2"),
     settings: new TableProxy<AppSetting>("settings"),
   },
 
@@ -342,6 +359,8 @@ export const db: DB = {
           "debts",
           "investments",
           "investmentTransactions",
+          "accounts",
+          "transactions_v2",
           "settings",
         ];
         callback = rest[0];
@@ -380,12 +399,16 @@ export const db: DB = {
   // passthrough for operations expected by the app
   async delete() {
     try {
+      await coreDb.open();
       if (coreDb.deleteStore) {
         const allTables: TableName[] = [
           "transactionItems",
           "debts",
+          "debtInstallments",
           "investments",
           "investmentTransactions",
+          "accounts",
+          "transactions_v2",
           "settings"
         ];
         await Promise.all(allTables.map((table)=>coreDb.truncate(table)));
@@ -405,6 +428,15 @@ export const db: DB = {
       throw error;
     }
   },
+
+  async close() {
+    try {
+      await coreDb.close();
+    } catch (error) {
+      console.error("Failed to close database:", error);
+      throw error;
+    }
+  },
 };
 
 export const applyEncryptionMiddleware = (cs = cryptoService) => {
@@ -416,19 +448,86 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
   }
 
   const sensitiveFieldsMap: SensitiveFieldsMap = {
+    // Legacy stores (retained in v3)
     transactionItems: ["description", "amount"],
     debts: ["description", "amount", "person"],
     investments: ["name", "notes", "currentValue"],
     investmentTransactions: ["amount", "notes"],
     debtInstallments: ["amount", "note"],
+    // Double-Entry Accounting (v3)
+    accounts: ["name"],
+    transactions_v2: ["note"],  // entries[].amount handled by custom hooks below
+    // Settings
     settings: [],
   } as const;
 
   function isModel(value: unknown): value is Model {
     if (!value || typeof value !== "object") return false;
     // Basic check for common properties that should exist in Model types
-    return "id" in value;
+    return "id" in value || "key" in value;
   }
+
+  const encryptField = async (
+    val: string | number,
+    key: CryptoKey
+  ): Promise<EncryptedField> => {
+    return cs.encrypt(String(val), key);
+  };
+
+  const decryptField = async (
+    val: EncryptedField,
+    key: CryptoKey
+  ): Promise<string> => {
+    return cs.decrypt(val, key);
+  };
+
+  const isEncryptedField = (val: unknown): val is EncryptedField => {
+    return (
+      !!val &&
+      typeof val === "object" &&
+      "iv" in val &&
+      "ciphertext" in val &&
+      typeof (val as EncryptedField).iv === "string" &&
+      typeof (val as EncryptedField).ciphertext === "string"
+    );
+  };
+
+  /**
+   * Custom hook: encrypt each entry's `amount` in transactions_v2.
+   * accountId, type, and entryAccountIds remain unencrypted.
+   */
+  const encryptTransactionEntries = async (obj: any, key: CryptoKey): Promise<any> => {
+    if (!obj.entries || !Array.isArray(obj.entries)) return obj;
+    const encryptedEntries = await Promise.all(
+      obj.entries.map(async (entry: any) => ({
+        ...entry,
+        amount: await encryptField(entry.amount, key),
+      }))
+    );
+    return { ...obj, entries: encryptedEntries };
+  };
+
+  /**
+   * Custom hook: decrypt each entry's `amount` in transactions_v2.
+   */
+  const decryptTransactionEntries = async (obj: any, key: CryptoKey): Promise<any> => {
+    if (!obj.entries || !Array.isArray(obj.entries)) return obj;
+    const decryptedEntries = await Promise.all(
+      obj.entries.map(async (entry: any) => {
+        if (isEncryptedField(entry.amount)) {
+          try {
+            const decryptedAmount = await decryptField(entry.amount, key);
+            return { ...entry, amount: parseFloat(decryptedAmount) };
+          } catch (error) {
+            console.error('Failed to decrypt entry amount:', error);
+            return entry;
+          }
+        }
+        return entry;
+      })
+    );
+    return { ...obj, entries: decryptedEntries };
+  };
 
   const encryptObject = async (
     obj: unknown,
@@ -447,8 +546,7 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
       if (field in obj && obj[field as keyof typeof obj] != null) {
         const value = obj[field as keyof typeof obj];
         if (typeof value === "string" || typeof value === "number") {
-          const { iv, ciphertext } = await cs.encrypt(String(value), key);
-          (encrypted as Record<string, unknown>)[field] = { iv, ciphertext };
+          (encrypted as Record<string, unknown>)[field] = await encryptField(value, key);
         }
       }
     }
@@ -470,18 +568,13 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
     const decrypted = { ...obj };
     for (const field of fields) {
       const value = obj[field as keyof typeof obj];
-      if (
-        value &&
-        typeof value === "object" &&
-        "iv" in value &&
-        "ciphertext" in value &&
-        typeof (value as EncryptedField).iv === "string" &&
-        typeof (value as EncryptedField).ciphertext === "string"
-      ) {
+      if (isEncryptedField(value)) {
         try {
-          const decryptedValue = await cs.decrypt(value as EncryptedField, key);
+          const decryptedValue = await decryptField(value, key);
           (decrypted as Record<string, unknown>)[field] =
-            field === "amount" ? parseFloat(decryptedValue) : decryptedValue;
+            field === "amount" || field === "currentValue"
+              ? parseFloat(decryptedValue)
+              : decryptedValue;
         } catch (error) {
           console.error(`Failed to decrypt field ${field}:`, error);
           decrypted[field] = value;
@@ -497,7 +590,17 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
         if (typeof value === "object" && value !== null) {
           const fields =
             sensitiveFieldsMap[name as keyof typeof sensitiveFieldsMap] || [];
-          return (await encryptObject(value, fields)) as T;
+          let result = (await encryptObject(value, fields)) as T;
+
+          // Custom hook for transactions_v2: encrypt each entry's amount
+          if (name === "transactions_v2") {
+            const key = cs.getKey();
+            if (key) {
+              result = (await encryptTransactionEntries(result, key)) as T;
+            }
+          }
+
+          return result;
         }
         return value;
       },
@@ -506,19 +609,37 @@ export const applyEncryptionMiddleware = (cs = cryptoService) => {
         const fields =
           sensitiveFieldsMap[name as keyof typeof sensitiveFieldsMap] || [];
 
-        if((fields as readonly string[]).includes('note')) debugger;
-
         if (Array.isArray(value)) {
-          return Promise.all(
-            value.map((v) =>
-              typeof v === "object" ? decryptObject(v, fields) : v
-            )
-          ) as Promise<T>;
+          const results = await Promise.all(
+            value.map(async (v) => {
+              if (typeof v !== "object") return v;
+              let decrypted = await decryptObject(v, fields);
+              // Custom hook for transactions_v2: decrypt each entry's amount
+              if (name === "transactions_v2") {
+                const key = cs.getKey();
+                if (key) {
+                  decrypted = await decryptTransactionEntries(decrypted, key);
+                }
+              }
+              return decrypted;
+            })
+          );
+          return results as T;
         }
 
-        return typeof value === "object"
+        let result = typeof value === "object"
           ? ((await decryptObject(value, fields)) as T)
           : value;
+
+        // Custom hook for transactions_v2: decrypt each entry's amount
+        if (name === "transactions_v2" && typeof result === "object" && result !== null) {
+          const key = cs.getKey();
+          if (key) {
+            result = (await decryptTransactionEntries(result, key)) as T;
+          }
+        }
+
+        return result;
       },
     }),
   });

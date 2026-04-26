@@ -46,7 +46,7 @@ const DebtInstallmentModal: FC<DebtInstallmentModalProps> = ({
 
   const markAsSettledRef = useRef(markAsSettled);
 
-  const isMarkAsSettledDirty = markAsSettled !== markAsSettledRef.currentValue;
+  const isMarkAsSettledDirty = markAsSettled !== markAsSettledRef.current;
 
   const isEditMode = !!installmentToEdit;
 

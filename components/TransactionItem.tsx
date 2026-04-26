@@ -108,7 +108,7 @@ const TransactionItem: FC<TransactionItemProps> = ({ transaction, onEdit, onDele
   };
 
   return (
-    <li className={`relative bg-white dark:bg-slate-800 p-4 flex items-center gap-4 border-l-4 ${borderColor} rounded-r-lg shadow-sm ${isAnimatingOut ? 'animate-fadeOutDown' : 'animate-fadeInUp'} ${menuOpen ? 'z-40' : 'z-auto'}`}>
+    <li className={`transaction-item relative bg-white dark:bg-slate-800 p-4 flex items-center gap-4 border-l-4 ${borderColor} rounded-r-lg shadow-sm ${isAnimatingOut ? 'animate-fadeOutDown' : 'animate-fadeInUp'} ${menuOpen ? 'z-40' : 'z-auto'}`}>
       <Icon />
       <div className="flex-grow">
         <p className="font-semibold text-slate-800 dark:text-slate-100 capitalize">

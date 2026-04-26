@@ -3,7 +3,11 @@
 // Since I cannot run browser JS from here directly into the user's running browser session context easily without an extension or manual paste,
 // I will create a React component that the user can mount temporarily, or a robust standalone script they can paste into the console.
 
+// @deprecated: This script seeds the legacy `transactionItems` table. It does NOT seed `transactions_v2` (double-entry). 
+// Running this will require the app to perform a migration (migrationV3) upon load.
+
 // Standalone Console Script version for "i8e10DB"
+
 // Paste this into the browser console at http://localhost:36373/
 
 (function seedData() {
