@@ -26,3 +26,5 @@ playwright/.auth/
 .codex/
 .cursor/
 .continue/
+# AI Vendor Directories
+.claude/
