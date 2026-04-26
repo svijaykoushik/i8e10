@@ -15,3 +15,6 @@ blob-report/
 
 # (Optional) If you are saving authentication state to a file/folder
 playwright/.auth/
+
+# worktrees
+.worktree
