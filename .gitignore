@@ -18,3 +18,11 @@ playwright/.auth/
 
 # worktrees
 .worktree
+
+# AI Vendor Directories
+.agents/
+.github-copilot/
+.chatgpt/
+.codex/
+.cursor/
+.continue/

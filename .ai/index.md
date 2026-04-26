@@ -33,6 +33,7 @@ Modular methodologies and capabilities that can be "loaded" by an AI agent to pe
 - **Karpathy Guidelines**: LLM-augmented coding standards.
 - **Test Driven Development**: Comprehensive TDD flow and anti-patterns.
 - **Use Git Worktrees**: Workflow for managing multiple tasks simultaneously.
+- **Vendor Sync**: Synchronizes .ai resources to IDE/vendor directories (Cursor, Copilot, etc.).
 
 ### [Prompts](./prompts/)
 Pre-defined, high-context prompts for specific operational tasks.
