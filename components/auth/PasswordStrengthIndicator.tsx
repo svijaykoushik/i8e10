@@ -29,7 +29,9 @@ const calculateStrength = (password: string): Strength => {
   }
 };
 
-const PasswordStrengthIndicator: FC<PasswordStrengthIndicatorProps> = ({ password = '' }) => {
+const PasswordStrengthIndicator: FC<PasswordStrengthIndicatorProps> & {
+  calculateStrength: (password: string) => Strength;
+} = ({ password = '' }) => {
   const { score, label, color } = calculateStrength(password);
   
   if (!password) {

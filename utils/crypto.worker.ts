@@ -2053,7 +2053,7 @@ const wordlist = [
 const VERIFICATION_STRING = "i8e10VerificationString";
 
 // --- Helper Functions ---
-const stringToArrayBuffer = (str) => new TextEncoder().encode(str).buffer;
+const stringToArrayBuffer = (str: string): ArrayBuffer => new TextEncoder().encode(str).buffer as ArrayBuffer;
 const arrayBufferToString = (buffer) => new TextDecoder().decode(buffer);
 const arrayBufferToBase64 = (buffer) =>
   btoa(String.fromCharCode(...new Uint8Array(buffer)));
