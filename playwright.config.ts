@@ -18,9 +18,11 @@ export default defineConfig({
       name: 'chromium',
       use: { 
         ...devices['Desktop Chrome'],
-        launchOptions: {
-          executablePath: '/usr/bin/chromium-browser',
-        },
+        ...(process.env.CI ? {} : {
+          launchOptions: {
+            executablePath: '/usr/bin/chromium-browser',
+          },
+        }),
       },
     },
   ],
