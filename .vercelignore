@@ -1,4 +1,5 @@
 # Ignore documentation
 .ai/
+.wiki/
 docs/
 README.md

@@ -1,3 +1,8 @@
+---
+name: use-git-worktrees
+description: Workflow for managing multiple tasks or branches simultaneously using isolated Git worktrees, including safety checks and automated environment setup.
+---
+
 # Using Git Worktrees
 
 ## Overview
