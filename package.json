@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test --workers=1",
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.17",
-    "dexie": "^4.0.7",
     "framer-motion": "^12.34.3",
     "puppeteer": "^24.37.2",
     "react": "^19.1.1",
@@ -18,11 +21,14 @@
     "tailwindcss": "^4.1.17"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.7",
     "@vitejs/plugin-react": "^5.0.0",
+    "fake-indexeddb": "^6.2.5",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vite-plugin-pwa": "^1.0.2"
+    "vite-plugin-pwa": "^1.0.2",
+    "vitest": "^4.1.4"
   }
 }

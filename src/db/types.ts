@@ -5,6 +5,8 @@ import type {
   InvestmentTransaction,
   DebtInstallment,
 } from "../../types";
+import type { Account } from "./accounts";
+import type { DoubleEntryTransaction } from "./doubleEntryTypes";
 
 // Minimal database interface used by CustomCollection to avoid circular import
 export interface DatabaseLike {
@@ -78,11 +80,17 @@ export interface AppSetting {
 }
 
 export interface DatabaseSchema {
+  // Legacy (retained in v3, removed in v4)
+  /** @deprecated Replaced by transactions_v2 */
   transactionItems: Table<Transaction, string>;
   debts: Table<Debt, string>;
   investments: Table<Investment, string>;
   investmentTransactions: Table<InvestmentTransaction, string>;
   debtInstallments: Table<DebtInstallment>;
+  // Double-Entry Accounting (v3)
+  accounts: Table<Account, string>;
+  transactions_v2: Table<DoubleEntryTransaction, string>;
+  // Settings
   settings: Table<AppSetting, string>;
 }
 

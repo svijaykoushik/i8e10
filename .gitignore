@@ -4,3 +4,27 @@ venv/
 __pycache__/
 *.py[cod]
 dist
+
+# Playwright test output and reports
+playwright-report/
+test-results/
+blob-report/
+
+# Playwright temporary files/caching
+.playwright/
+
+# (Optional) If you are saving authentication state to a file/folder
+playwright/.auth/
+
+# worktrees
+.worktree
+
+# AI Vendor Directories
+.agents/
+.github-copilot/
+.chatgpt/
+.codex/
+.cursor/
+.continue/
+# AI Vendor Directories
+.claude/

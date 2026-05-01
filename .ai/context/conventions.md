@@ -11,9 +11,10 @@
 -   **Side Effects**: Managed via `useEffect`.
 -   **Data Binding**: Use `liveQuery` hooks (custom implementation) to subscribe to database changes.
 
-## Database (Custom Wrapper)
+## Database & Accounting Patterns
 -   **Access**: Use the singleton `db` instance from `utils/db.ts`.
 -   **API**: Mimics Dexie.js with chainable methods (`orderBy`, `reverse`, `filter`).
+-   **Double-Entry Adapter**: Use `accountingAdapter.ts` to fetch and transform double-entry records (`transactions_v2`) into the standard `Transaction` UI format.
 -   **Transactions**: Use `db.transaction('rw', [tables], async () => { ... })` for atomic multi-table updates.
 
 ## Styling (Tailwind)

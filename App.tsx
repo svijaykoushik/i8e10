@@ -43,10 +43,21 @@ import OfflineReadySnackbar from './components/OfflineReadySnackbar';
 import { liveQuery } from './src/db/liveQuery';
 import { ActionType, ActiveView, CashFlowFilterState, Debt, DebtFilterState, DebtFilterStatus, DebtFilterType, DebtInstallment, DebtStatus, DebtType, FilterPeriod, FilterState, Investment, InvestmentFilterState, InvestmentFilterStatus, InvestmentStatus, InvestmentTransaction, InvestmentTransactionType, Transaction, TransactionFilterType, TransactionType } from './types';
 import * as cryptoService from './utils/cryptoService';
-import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV } from './utils/csvExporter';
-import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV } from './utils/csvImporter';
+import { generateDebtInstallmentsCSV, generateDebtsCSV, generateInvestmentsCSV, generateInvestmentTransactionsCSV, generateTransactionsCSV, generateAccountsCSV, generateDoubleEntryTransactionsCSV } from './utils/csvExporter';
+import { parseDebtInstallmentsCSV, parseDebtsCSV, ParseError, parseInvestmentsCSV, parseInvestmentTransactionsCSV, parseTransactionsCSV, parseAccountsCSV, parseDoubleEntryTransactionsCSV } from './utils/csvImporter';
 import { db, type AppSetting } from './utils/db';
 import { exportToZip, readZip } from './utils/zipExporter';
+import { isMigrationComplete, runMigrationV3 } from './utils/migrationV3';
+import * as accountingAdapter from './utils/accountingAdapter';
+import * as accountManager from './utils/accountManager';
+import * as debtManager from './utils/debtManager';
+import * as investmentManager from './utils/investmentManager';
+import { computeWalletBalance, computeTotalWalletBalance, computePeriodicFlow } from './utils/balanceCalculator';
+import { presentAllForUI, type PresentedTransaction } from './utils/transactionPresenter';
+import type { DoubleEntryTransaction } from './src/db/doubleEntryTypes';
+import type { Account } from './src/db/accounts';
+import { walletAccountId } from './src/db/accounts';
+import { MigrationRequiredModal } from './components/MigrationRequiredModal';
 
 // --- Recovery Modals (Inlined to avoid new files) ---
 
@@ -162,6 +173,8 @@ type ImportResultSummary = {
     debtInst: { added: number; updated: number }
     inv: { added: number; updated: number };
     invTx: { added: number; updated: number };
+    acc: { added: number; updated: number };
+    doubleTx: { added: number; updated: number };
 };
 
 const getLocalDateString = () => {
@@ -172,7 +185,7 @@ const getLocalDateString = () => {
   return `${year}-${month}-${day}`;
 };
 
-type AppStatus = 'LOADING' | 'LOCKED' | 'SETUP_REQUIRED' | 'UNLOCKED' | 'MIGRATING';
+type AppStatus = 'LOADING' | 'LOCKED' | 'SETUP_REQUIRED' | 'MIGRATION_REQUIRED' | 'UNLOCKED' | 'MIGRATING';
 
 const FullScreenLoader: FC<{ message: string }> = ({ message }) => (
     <div className="fixed inset-0 bg-slate-50 dark:bg-slate-900 flex flex-col justify-center items-center z-50">
@@ -194,8 +207,7 @@ const App: FC = () => {
   useEffect(() => {
     if (appStatus !== 'UNLOCKED') return;
     const sub = liveQuery(async () => {
-      const txns = await db.transactionItems.orderBy('date').reverse().toArray()
-      return txns;
+      return await accountingAdapter.getTransactions('date');
     }).subscribe((val: Transaction[])=>setTransactions(val));
     return () => sub.unsubscribe();
   }, [appStatus]);
@@ -237,6 +249,66 @@ const App: FC = () => {
     return () => sub.unsubscribe();
   }, []);
 
+  // --- Double-Entry Data (v3) ---
+  const [doubleEntryTxns, setDoubleEntryTxns] = useState<DoubleEntryTransaction[] | undefined>();
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+    const sub = liveQuery(async () => {
+      return db.transactions_v2.orderBy('date').reverse().toArray();
+    }).subscribe((val: DoubleEntryTransaction[]) => setDoubleEntryTxns(val));
+    return () => sub.unsubscribe();
+  }, [appStatus]);
+
+  const [allAccounts, setAllAccounts] = useState<Account[] | undefined>();
+  useEffect(() => {
+    if (appStatus !== 'UNLOCKED') return;
+    const sub = liveQuery(async () => {
+      return db.accounts.toArray();
+    }).subscribe((val: Account[]) => setAllAccounts(val));
+    return () => sub.unsubscribe();
+  }, [appStatus]);
+
+  const accountMap = useMemo(() => {
+    const map = new Map<string, Account>();
+    if (allAccounts) {
+      for (const acc of allAccounts) {
+        map.set(acc.id, acc);
+      }
+    }
+    return map;
+  }, [allAccounts]);
+
+  const walletAccounts = useMemo(() => {
+    if (!allAccounts) return [];
+    return allAccounts.filter(a => a.subtype === 'wallet' && a.isActive);
+  }, [allAccounts]);
+
+  const walletNames = useMemo(() => walletAccounts.map(w => w.name), [walletAccounts]);
+
+  // Presented transactions (legacy format for existing UI components)
+  const presentedTransactions = useMemo(() => {
+    if (!doubleEntryTxns) return undefined;
+    return presentAllForUI(doubleEntryTxns, accountMap);
+  }, [doubleEntryTxns, accountMap]);
+
+  // --- Migration State ---
+  const [migrationProgress, setMigrationProgress] = useState<string>('');
+  const [migrationBackupDone, setMigrationBackupDone] = useState(false);
+
+  const handleRunMigration = async () => {
+    setAppStatus('MIGRATING');
+    try {
+      await runMigrationV3((step, detail) => {
+        setMigrationProgress(`${step}: ${detail}`);
+      });
+      setAppStatus('UNLOCKED');
+    } catch (error) {
+      console.error('Migration failed:', error);
+      setMigrationProgress(`Error: ${error}`);
+      setAppStatus('MIGRATION_REQUIRED');
+    }
+  };
+
   const settings = useMemo(() => {
     const settingsMap: { [key: string]: any } = {};
     if (settingsArray) {
@@ -245,16 +317,16 @@ const App: FC = () => {
         }
     }
     return {
-        wallets: (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
+        wallets: walletNames.length > 0 ? walletNames : (settingsMap.wallets ?? ['Cash / ரொக்கம்', 'Bank / வங்கி']) as string[],
         onboardingCompleted: settingsMap.onboardingCompleted ?? false,
         defaultFilterPeriod: settingsMap.defaultFilterPeriod ?? FilterPeriod.THIS_MONTH,
-        defaultWallet: settingsMap.defaultWallet ?? 'Cash / ரொக்கம்',
+        defaultWallet: settingsMap.defaultWallet ?? 'all',
         lastBackupDate: settingsMap.lastBackupDate ?? null,
         backupReminderDismissedUntil: settingsMap.backupReminderDismissedUntil ?? null,
         appFirstUseDate: settingsMap.appFirstUseDate ?? null,
         deficitThreshold: settingsMap.deficitThreshold ?? 1000,
     };
-  }, [settingsArray]);
+  }, [settingsArray, walletNames, walletAccounts]);
   
   const { wallets, onboardingCompleted, defaultFilterPeriod, defaultWallet, lastBackupDate, backupReminderDismissedUntil, appFirstUseDate, deficitThreshold } = settings;
 
@@ -329,7 +401,7 @@ const App: FC = () => {
     period: defaultFilterPeriod,
     startDate: getLocalDateString(),
     endDate: getLocalDateString(),
-    wallet: correctedDefaultWallet,
+    wallet: 'all',
     transactionType: TransactionFilterType.ALL,
   });
   
@@ -543,6 +615,8 @@ const App: FC = () => {
           }
         }
         
+        // Note: db.transactionItems is retained here to ensure legacy offline backups 
+        // that haven't been migrated yet are correctly re-encrypted.
         // Fix: Pass tables as an array to db.transaction
         await db.transaction('rw', [db.transactionItems, db.debts, db.investments, db.investmentTransactions, db.settings], async () => {
             // Re-write all items to trigger encryption middleware.
@@ -585,8 +659,9 @@ const App: FC = () => {
     }
   };
   
-  const handleRecoveryPhraseSaved = () => {
+  const handleRecoveryPhraseSaved = async () => {
     setPendingRecoveryPhrase(null);
+    await runMigrationV3();
     setAppStatus('UNLOCKED');
   };
 
@@ -602,7 +677,13 @@ const App: FC = () => {
       
       try {
           await cryptoService.verifyPasswordAndGetKey(password, salt, wrappedMasterKey, verifier);
-          setAppStatus('UNLOCKED');
+          // Check if double-entry migration is needed
+          const migrated = await isMigrationComplete();
+          if (!migrated) {
+            setAppStatus('MIGRATION_REQUIRED');
+          } else {
+            setAppStatus('UNLOCKED');
+          }
           return true;
       } catch (error) {
           console.error("Unlock failed:", error);
@@ -696,20 +777,47 @@ const App: FC = () => {
   
   const handleSaveSettings = async (
     newDefaultPeriod: FilterPeriod,
-    newWallets: string[],
-    newDefaultWallet: string,
+    walletUpdates: { added: string[], renamed: { id: string, newName: string }[], removed: string[] },
+    newDefaultWalletId: string,
     newDeficitThreshold: number
   ) => {
+    // Process wallet additions
+    for (const name of walletUpdates.added) {
+      try { await accountManager.addWallet(name); } catch (e) { console.error('Failed to add wallet:', e); }
+    }
+    
+    // Process wallet renames
+    for (const { id, newName } of walletUpdates.renamed) {
+      try { await accountManager.renameWallet(id, newName); } catch (e) { console.error('Failed to rename wallet:', e); }
+    }
+
+    // Process wallet removals
+    for (const id of walletUpdates.removed) {
+      try { await accountManager.removeWallet(id); } catch (e) { console.error('Failed to remove wallet:', e); }
+    }
+
+    // Also update legacy wallets array for backward compatibility
+    const newWallets = walletAccounts
+      .filter(w => !walletUpdates.removed.includes(w.id))
+      .map(w => {
+        const renamed = walletUpdates.renamed.find(r => r.id === w.id);
+        return renamed ? renamed.newName : w.name;
+      })
+      .concat(walletUpdates.added);
+
+    // Resolve defaultWallet to account ID
+    const resolvedDefaultWallet = newDefaultWalletId;
+
     await db.settings.bulkPut([
       { key: "defaultFilterPeriod", value: newDefaultPeriod },
       { key: "wallets", value: newWallets },
-      { key: "defaultWallet", value: newDefaultWallet },
+      { key: "defaultWallet", value: resolvedDefaultWallet },
       { key: "deficitThreshold", value: newDeficitThreshold },
     ]);
     setFilter((prev) => ({
       ...prev,
       period: newDefaultPeriod,
-      wallet: newDefaultWallet,
+      wallet: resolvedDefaultWallet,
     }));
     setIsSettingsModalOpen(false);
   };
@@ -864,21 +972,44 @@ const App: FC = () => {
     setIsSellInvestmentModalOpen(true);
   };
 
+  const resolveWalletAccId = (walletName?: string): string => {
+    if (!walletName) return walletAccounts[0]?.id ?? 'acc_wallet_cash';
+    const acc = walletAccounts.find(w => w.name === walletName);
+    return acc?.id ?? walletAccountId(walletName);
+  };
+
   const handleSaveTransaction = async (data: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'> & { id?: string }) => {
     try {
-      await db.transaction('rw', db.transactionItems, db.settings, async () => {
-          if (data.id) { // Edit mode
-              const txToUpdate = await db.transactionItems.get(data.id);
-              if (txToUpdate) {
-                  await db.transactionItems.update(data.id, { ...txToUpdate, ...data });
-              }
-          } else { // Add mode
-              if (!appFirstUseDate) {
-                  await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-              }
-              await db.transactionItems.add({ ...data, id: crypto.randomUUID(), isReconciliation: false });
-          }
-    });
+      if (data.id) { // Edit mode — update both legacy and v2
+        const existingV2 = await db.transactions_v2.get(data.id);
+        if (existingV2) {
+          // Update the double-entry transaction
+          const wAccId = resolveWalletAccId(data.wallet);
+          const isIncome = data.type === TransactionType.INCOME;
+          existingV2.date = data.date;
+          existingV2.note = data.description;
+          existingV2.entries = isIncome
+            ? [
+                { accountId: wAccId, type: 'debit', amount: data.amount },
+                { accountId: 'acc_income', type: 'credit', amount: data.amount },
+              ]
+            : [
+                { accountId: 'acc_expense', type: 'debit', amount: data.amount },
+                { accountId: wAccId, type: 'credit', amount: data.amount },
+              ];
+          await accountingAdapter.updateTransaction(existingV2);
+        }
+      } else { // Add mode — write to v2
+        if (!appFirstUseDate) {
+          await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+        }
+        const wAccId = resolveWalletAccId(data.wallet);
+        if (data.type === TransactionType.INCOME) {
+          await accountingAdapter.recordIncome({ amount: data.amount, date: data.date, description: data.description, walletAccountId: wAccId });
+        } else {
+          await accountingAdapter.recordExpense({ amount: data.amount, date: data.date, description: data.description, walletAccountId: wAccId });
+        }
+      }
     closeAllModals();
   }catch(e){
     console.log("Failed to save transaction",e)
@@ -886,57 +1017,34 @@ const App: FC = () => {
   };
 
   const handleBulkAddTransactions = async (newTransactions: Omit<Transaction, 'id' | 'isReconciliation' | 'transferId'>[]) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        const fullTransactions = newTransactions.map(tx => ({
-            ...tx,
-            id: crypto.randomUUID(),
-            isReconciliation: false,
-        }));
-        if (fullTransactions.length > 0) {
-            await db.transactionItems.bulkAdd(fullTransactions);
-        }
-    });
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
+    for (const tx of newTransactions) {
+      const wAccId = resolveWalletAccId(tx.wallet);
+      if (tx.type === TransactionType.INCOME) {
+        await accountingAdapter.recordIncome({ amount: tx.amount, date: tx.date, description: tx.description, walletAccountId: wAccId });
+      } else {
+        await accountingAdapter.recordExpense({ amount: tx.amount, date: tx.date, description: tx.description, walletAccountId: wAccId });
+      }
+    }
     setFilter(prev => ({ ...prev, period: FilterPeriod.ALL }));
     closeAllModals();
   };
   
   const handleSaveTransfer = async (data: { amount: number; date: string; fromWallet: string; toWallet: string; description: string }) => {
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        const transferId = crypto.randomUUID();
-        const { amount, date, fromWallet, toWallet, description } = data;
-
-        const expenseDesc = `Transfer to ${toWallet}${description ? ` (${description})` : ''}`;
-        const incomeDesc = `Transfer from ${fromWallet}${description ? ` (${description})` : ''}`;
-
-        const expenseTransaction: Transaction = {
-            id: crypto.randomUUID(),
-            type: TransactionType.EXPENSE,
-            amount,
-            date,
-            wallet: fromWallet,
-            description: expenseDesc,
-            isReconciliation: false,
-            transferId,
-        };
-
-        const incomeTransaction: Transaction = {
-            id: crypto.randomUUID(),
-            type: TransactionType.INCOME,
-            amount,
-            date,
-            wallet: toWallet,
-            description: incomeDesc,
-            isReconciliation: false,
-            transferId,
-        };
-        
-        await db.transactionItems.bulkAdd([expenseTransaction, incomeTransaction]);
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
+    const fromAccId = resolveWalletAccId(data.fromWallet);
+    const toAccId = resolveWalletAccId(data.toWallet);
+    const desc = `Transfer: ${data.fromWallet} → ${data.toWallet}${data.description ? ` (${data.description})` : ''}`;
+    await accountingAdapter.recordTransfer({
+      amount: data.amount,
+      date: data.date,
+      fromWalletAccountId: fromAccId,
+      toWalletAccountId: toAccId,
+      description: desc,
     });
     closeAllModals();
   };
@@ -957,28 +1065,32 @@ const App: FC = () => {
         });
     } else { // Add mode
         
-        await db.transaction('rw', db.debts, db.transactionItems, db.settings, async () => {
+        await db.transaction('rw', db.debts, db.settings, async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
             const newDebt: Debt = { ...debtData, id: crypto.randomUUID(), status: DebtStatus.OUTSTANDING };
             await db.debts.add(newDebt);
 
-            if (createTransaction) {
-                const newTransaction: Transaction = {
-                    id: crypto.randomUUID(),
-                    type: debtData.type === DebtType.LENT ? TransactionType.EXPENSE : TransactionType.INCOME,
-                    amount: debtData.amount,
-                    date: debtData.date,
-                    description: debtData.type === DebtType.LENT
-                        ? `Loan to ${debtData.person}`
-                        : `Loan from ${debtData.person}`,
-                    wallet: wallet,
-                    debtId: newDebt.id,
-                    isReconciliation: false,
-                };
-                await db.transactionItems.add(newTransaction);
-            }
+            // Create debt account + double-entry transaction
+            try {
+              const dType = debtData.type === DebtType.OWED ? 'owed' : 'lent';
+              const { createDebtAccount } = await import('./src/db/accounts');
+              const debtAcc = createDebtAccount(newDebt.id, dType as 'owed' | 'lent', debtData.person);
+              try { await db.accounts.add(debtAcc); } catch {}
+              if (createTransaction) {
+                const wAccId = resolveWalletAccId(wallet);
+                await accountingAdapter.recordDebtCreation({
+                  debtId: newDebt.id,
+                  debtType: dType as 'owed' | 'lent',
+                  amount: debtData.amount,
+                  date: debtData.date,
+                  description: debtData.type === DebtType.LENT ? `Loan to ${debtData.person}` : `Loan from ${debtData.person}`,
+                  walletAccountId: wAccId,
+                  createTransaction: true,
+                });
+              }
+            } catch (e) { console.error('v2 debt creation failed:', e); }
         });
     }
     closeAllModals();
@@ -993,132 +1105,18 @@ const App: FC = () => {
   }) => {
     if (!debtForInstallment) return;
 
-    await db.transaction(
-      "rw",
-      db.debts,
-      db.debtInstallements,
-      db.transactionItems,
-      db.settings,
-      async () => {
-        const linkedDebt = await db.debts.get(data.installmentData.debtId);
-        const allInstallments: DebtInstallment[] = await db.debtInstallements
-          .where({ debtId: data.installmentData.debtId })
-          .toArray();
-
-        if (data.installmentData.id) {
-          // Edit mode
-          await db.transaction(
-            "rw",
-            db.debtInstallements,
-            db.transactionItems,
-            db.settings,
-            async () => {
-              if (!appFirstUseDate) {
-                await db.settings.put({
-                  key: "appFirstUseDate",
-                  value: new Date().toISOString(),
-                });
-              }
-              await db.debtInstallements.update(
-                data.installmentData.id,
-                {...data.installmentData}
-              );
-
-              const linkedTransactions = await db.transactionItems.where({
-                debtInstallmentId: data.installmentData.id
-              }).toArray();
-
-              if (linkedTransactions?.[0]) {
-                const linkedTransaction = linkedTransactions[0] as Transaction;
-                await db.transactionItems.update(linkedTransaction.id, {
-                  ...linkedTransaction,
-                  amount: data.installmentData.amount,
-                });
-              }
-            }
-          );
-        } else {
-          // Add mode
-
-          if (!appFirstUseDate) {
-            await db.settings.put({
-              key: "appFirstUseDate",
-              value: new Date().toISOString(),
-            });
-          }
-
-
-          const installmentId = crypto.randomUUID()
-          const newInstallment: DebtInstallment = {
-            ...data.installmentData,
-            id: installmentId,
-          };
-
-          // 1. Add debt installment transaction
-          await db.debtInstallements.add(newInstallment);
-
-          // 2. Create Transaction for the payment
-          if (data.createTransaction) {
-            const isLent = debtForInstallment.type === DebtType.LENT;
-            const newTransaction: Transaction = {
-              id: crypto.randomUUID(),
-              type: isLent ? TransactionType.INCOME : TransactionType.EXPENSE,
-              amount: data.installmentData.amount,
-              date: data.installmentData.date,
-              description: isLent
-                ? `Payment received from ${debtForInstallment.person}`
-                : `Payment made to ${debtForInstallment.person}`,
-              wallet: data.wallet,
-              debtId: debtForInstallment.id,
-              isReconciliation: false,
-              debtInstallmentId: installmentId
-            };
-            await db.transactionItems.add(newTransaction);
-          }
-        }
-
-        // Handle debt status
-        const newStatus = data.markAsSettled ? DebtStatus.SETTLED : DebtStatus.OUTSTANDING;
-        await db.debts.update(debtForInstallment.id, {
-                status: newStatus
-        });
-
-        // Handle Surplus (Overpayment) - Create New Debt
-        if (data.createSurplusRecord) {
-          const paidPreviously = (allInstallments || []).reduce(
-            (sum, i) => sum + i.amount,
-            0
-          );
-          const remaining = Math.max(
-            0,
-            (linkedDebt?.amount || 0) - paidPreviously
-          );
-          const surplusAmount = Math.max(
-            0,
-            data.installmentData.amount - remaining
-          );
-
-          if (surplusAmount > 0) {
-            const isOriginalLent = debtForInstallment.type === DebtType.LENT;
-            const newDebtType = isOriginalLent ? DebtType.OWED : DebtType.LENT; // Inverse
-
-            const newDebt: Debt = {
-              id: crypto.randomUUID(),
-              type: newDebtType,
-              person: debtForInstallment.person,
-              amount: surplusAmount,
-              description: `Overpayment from previous ${
-                isOriginalLent ? "loan" : "debt"
-              } settlement`,
-              date: data.installmentData.date,
-              status: DebtStatus.OUTSTANDING,
-            };
-            await db.debts.add(newDebt);
-          }
-        }
-      }
-    );
-    closeAllModals();
+    try {
+      const wAccId = resolveWalletAccId(data.wallet);
+      await debtManager.saveDebtInstallment({
+        ...data,
+        walletAccountId: wAccId,
+        debtForInstallment,
+        appFirstUseDateExists: !!appFirstUseDate,
+      });
+      closeAllModals();
+    } catch (e) {
+      console.error("Failed to save debt installment:", e);
+    }
   };
   
   const handleSaveInvestment = async (data: {
@@ -1142,7 +1140,7 @@ const App: FC = () => {
     } else { // Add mode
         const contributionAmount = initialContribution || 0;
         
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, db.settings, async () => {
+        await db.transaction('rw', [db.investments, db.investmentTransactions, db.settings, db.transactions_v2, db.accounts], async () => {
             if (!appFirstUseDate) {
                 await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
             }
@@ -1163,19 +1161,23 @@ const App: FC = () => {
                     amount: contributionAmount,
                 };
                 await db.investmentTransactions.add(investmentTx);
-                
+
+
+                // Also write to double-entry
                 if (createTransaction && wallet) {
-                    const newTransaction: Transaction = {
-                        id: crypto.randomUUID(),
-                        type: TransactionType.EXPENSE,
-                        amount: contributionAmount,
-                        date: investmentData.startDate,
-                        description: `Investment: ${investmentData.name}`,
-                        wallet: wallet,
-                        investmentTransactionId: investmentTx.id,
-                        isReconciliation: false,
-                    };
-                    await db.transactionItems.add(newTransaction);
+                  try {
+                    const { createInvestmentAccount } = await import('./src/db/accounts');
+                    const invAcc = createInvestmentAccount(newInvestment.id, investmentData.name);
+                    try { await db.accounts.add(invAcc); } catch {}
+                    const wAccId = resolveWalletAccId(wallet);
+                    await accountingAdapter.recordInvestmentBuy({
+                      investmentId: newInvestment.id,
+                      amount: contributionAmount,
+                      date: investmentData.startDate,
+                      walletAccountId: wAccId,
+                      description: `Investment: ${investmentData.name}`,
+                    });
+                  } catch (e) { console.error('v2 investment buy failed:', e); }
                 }
             }
         });
@@ -1188,131 +1190,83 @@ const App: FC = () => {
     createTransaction: boolean;
     wallet: string;
   }) => {
-    const { transactionData, createTransaction, wallet } = data;
-
-    if (transactionData.id) { // Edit mode
-        await db.transaction('rw', db.investmentTransactions, db.settings, async () => {
-            if (!appFirstUseDate) {
-                await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-            }
-            await db.investmentTransactions.update(transactionData.id, transactionData);
-        });
-    } else { // Add mode
-
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.settings, async () => {
-            if (!appFirstUseDate) {
-                await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-            }
-            const newInvestmentTx: InvestmentTransaction = { ...transactionData, id: crypto.randomUUID() };
-            await db.investmentTransactions.add(newInvestmentTx);
-
-            if (createTransaction) {
-                let transactionType: TransactionType;
-                let description = '';
-                const invName = investments?.find(i => i.id === transactionData.investmentId)?.name || 'Unknown Investment';
-
-                switch (transactionData.type) {
-                    case InvestmentTransactionType.CONTRIBUTION:
-                        transactionType = TransactionType.EXPENSE;
-                        description = `Investment Top-up: ${invName}`;
-                        break;
-                    case InvestmentTransactionType.WITHDRAWAL:
-                        transactionType = TransactionType.INCOME;
-                        description = `Investment Withdrawal: ${invName}`;
-                        break;
-                    case InvestmentTransactionType.DIVIDEND:
-                    default:
-                        transactionType = TransactionType.INCOME;
-                        description = `Dividend: ${invName}`;
-                        break;
-                }
-
-                const newTransaction: Transaction = {
-                    id: crypto.randomUUID(),
-                    type: transactionType,
-                    amount: transactionData.amount,
-                    date: transactionData.date,
-                    description,
-                    wallet: wallet,
-                    investmentTransactionId: newInvestmentTx.id,
-                    isReconciliation: false,
-                };
-                await db.transactionItems.add(newTransaction);
-            }
-        });
+    try {
+      const wAccId = resolveWalletAccId(data.wallet);
+      await investmentManager.saveInvestmentTransaction({
+        ...data,
+        walletAccountId: wAccId,
+        appFirstUseDateExists: !!appFirstUseDate,
+      });
+      closeAllModals();
+    } catch (e) {
+      console.error("Failed to save investment transaction:", e);
     }
-    closeAllModals();
   };
 
 
   const handleConfirmDelete = async () => {
     if (!itemToDelete) return;
     
-    let itemType = 'transaction';
-    if ('person' in itemToDelete) itemType = 'debt';
-    else if ('investmentId' in itemToDelete) itemType = 'investment_transaction';
-    else if ('startDate' in itemToDelete) itemType = 'investment';
-    else if ('debtId' in itemToDelete ) itemType = 'installment'
-    
-
     if ('person' in itemToDelete) { // Debt
-        // Ensure installments are included in the same transaction to avoid
-        // multiple transactions that can cause liveQuery to emit intermediate states.
-        await db.transaction('rw', [db.transactionItems, db.debts, db.debtInstallements], async () => {
-            await db.transactionItems.where({ debtId: itemToDelete.id }).delete();
-            await db.debtInstallements.where({debtId: itemToDelete.id}).delete();
+        await db.transaction('rw', [db.debts, db.debtInstallements, db.transactions_v2, db.accounts], async () => {
+            // 1. Delete double-entry ledger records
+            await accountingAdapter.deleteTransactionsByDebtId(itemToDelete.id);
+            // 2. Delete the debt account (optional, but keep for now to avoid orphan accounts if no other refs exist)
+            // Note: In a full implementation, we might want to keep the account but mark it inactive.
+            // 3. Delete metadata
+            await db.debtInstallements.where({ debtId: itemToDelete.id }).delete();
             await db.debts.delete(itemToDelete.id);
         });
-    } else if ('investmentId' in itemToDelete) { // InvestmentTransaction
+    } else if ('investmentId' in itemToDelete) { // InvestmentTransaction (Metadata record)
         const txToDelete = itemToDelete as InvestmentTransaction;
-        await db.transaction('rw', db.investmentTransactions, db.transactionItems, async () => {
+        await db.transaction('rw', [db.investmentTransactions, db.transactions_v2], async () => {
+            // 1. Delete linked ledger record
+            await accountingAdapter.deleteTransactionsByInvestmentTransactionId(txToDelete.id);
+            // 2. Delete metadata
             await db.investmentTransactions.delete(txToDelete.id);
-            await db.transactionItems.where({ investmentTransactionId: txToDelete.id }).delete();
         });
     } else if ('startDate' in itemToDelete) { // Investment
-        await db.transaction('rw', db.investments, db.investmentTransactions, db.transactionItems, async () => {
+        await db.transaction('rw', [db.investments, db.investmentTransactions, db.transactions_v2, db.accounts], async () => {
             const investmentIdToDelete = itemToDelete.id;
-            const childInvTxs = await db.investmentTransactions.where({ investmentId: investmentIdToDelete }).toArray();
-            const childInvTxIds = childInvTxs.map((tx: any) => tx.id);
-            
+            // 1. Delete all ledger records for this investment
+            await accountingAdapter.deleteTransactionsByInvestmentId(investmentIdToDelete);
+            // 2. Delete all transaction metadata
+            await db.investmentTransactions.where({ investmentId: investmentIdToDelete }).delete();
+            // 3. Delete the investment metadata
             await db.investments.delete(investmentIdToDelete);
-            if (childInvTxs.length > 0) {
-                await db.investmentTransactions.bulkDelete(childInvTxIds);
-                await db.transactionItems.where('investmentTransactionId').anyOf(childInvTxIds).delete();
-            }
         });
-    } else if ('debtId' in itemToDelete  && !('debtInstallmentId' in itemToDelete)){ // Installment
+    } else if ('debtId' in itemToDelete && !('debtInstallmentId' in itemToDelete)) { // Installment
         const installment = itemToDelete as DebtInstallment;
-        await db.transaction(
-          "rw",
-          db.debtInstallements,
-          db.transactionItems,
-          async () => {
+        await db.transaction('rw', [db.debtInstallements, db.transactions_v2], async () => {
+            // 1. Delete linked ledger record
+            const allTxns = await db.transactions_v2.toArray();
+            const idsToDelete = allTxns.filter(t => t.meta?.debtInstallmentId === installment.id).map(t => t.id);
+            if (idsToDelete.length > 0) {
+                await db.transactions_v2.bulkDelete(idsToDelete);
+            }
+            
+            // 2. Delete metadata
             await db.debtInstallements.delete(installment.id);
-            await db.transactionItems.where({
-              debtInstallmentId: installment.id
-            }).delete()
-          }
-        );
-    } else { // Transaction
+        });
+    } else { // Generic Transaction (Transfer or isolated Income/Expense)
         const transactionToDelete = itemToDelete as Transaction;
+        const idToDelete = transactionToDelete.id;
+        
         if (transactionToDelete.transferId) {
             const transferId = transactionToDelete.transferId;
-            const txsToDelete = await db.transactionItems.where({ transferId }).toArray();
-            const idsToDelete = txsToDelete.map((tx: any) => tx.id);
-            setAnimatingOutIds(prev => [...new Set([...prev, ...idsToDelete])]);
+            // Get all related IDs for animation
+            const txs = doubleEntryTxns?.filter(t => t.meta?.transferId === transferId) || [];
+            const idsToAnimate = txs.map(t => t.id);
+            
+            setAnimatingOutIds(prev => [...new Set([...prev, ...idsToAnimate])]);
             setTimeout(async () => {
-                await db.transactionItems.where({ transferId }).delete();
-                setAnimatingOutIds(prev => prev.filter(id => !idsToDelete.includes(id)));
+                await accountingAdapter.deleteTransactionsByTransferId(transferId);
+                setAnimatingOutIds(prev => prev.filter(id => !idsToAnimate.includes(id)));
             }, 300);
         } else {
-             const idToDelete = transactionToDelete.id;
             setAnimatingOutIds(prev => [...prev, idToDelete]);
             setTimeout(async () => {
-                // For simple transactions, or those linked to debts/investments where
-                // the parent item is NOT deleted, just delete the transaction itself.
-                // The atomic logic for deleting parents is handled when deleting the parent item.
-                await db.transactionItems.delete(idToDelete);
+                await accountingAdapter.deleteTransaction(idToDelete);
                 setAnimatingOutIds(prev => prev.filter(id => id !== idToDelete));
             }, 300);
         }
@@ -1324,7 +1278,7 @@ const App: FC = () => {
   const handleSettleDebt = async (data: { settlementDate: string; createTransaction: boolean; wallet: string }) => {
     if (!settlingDebt) return;
 
-    await db.transaction('rw', db.transactionItems, db.debts, db.debtInstallements, async () => {
+    await db.transaction('rw', [db.debts, db.debtInstallements, db.transactions_v2], async () => {
 
         // Calculate remaining amount based on installments
         const installments = await db.debtInstallements.where({
@@ -1333,9 +1287,7 @@ const App: FC = () => {
         const paidAmount = (installments || []).reduce((sum, inst) => sum + inst.amount, 0);
         const remainingAmount = settlingDebt.amount - paidAmount;
 
-
-
-        // Create a final settlement installment
+        // Create a final settlement installment metadata
         const finalInstallment: DebtInstallment = {
           amount: remainingAmount,
           date: data.settlementDate,
@@ -1346,20 +1298,20 @@ const App: FC = () => {
         await db.debtInstallements.add(finalInstallment);
   
         if (data.createTransaction && remainingAmount > 0) {
-            const newTransaction: Transaction = {
-                id: crypto.randomUUID(),
-                type: settlingDebt.type === DebtType.LENT ? TransactionType.INCOME : TransactionType.EXPENSE,
+            // Write settlement to double-entry ledger (PRIMARY TRUTH)
+            try {
+              const dType = settlingDebt.type === DebtType.LENT ? 'lent' : 'owed';
+              const wAccId = resolveWalletAccId(data.wallet);
+              await accountingAdapter.recordDebtPayment({
+                debtId: settlingDebt.id,
+                debtType: dType as 'owed' | 'lent',
                 amount: remainingAmount,
                 date: data.settlementDate,
-                description: settlingDebt.type === DebtType.LENT 
-                    ? `Settled debt from ${settlingDebt.person}` 
-                    : `Paid back debt to ${settlingDebt.person}`,
-                wallet: data.wallet,
-                debtId: settlingDebt.id,
-                isReconciliation: false,
-                debtInstallmentId: finalInstallment.id
-            };
-            await db.transactionItems.add(newTransaction);
+                walletAccountId: wAccId,
+                note: settlingDebt.type === DebtType.LENT ? `Settled debt from ${settlingDebt.person}` : `Paid back debt to ${settlingDebt.person}`,
+                debtInstallmentId: finalInstallment.id,
+              });
+            } catch (e) { console.error('v2 debt settlement failed:', e); }
         }
         await db.debts.update(settlingDebt.id, { status: DebtStatus.SETTLED });
     });
@@ -1371,6 +1323,25 @@ const App: FC = () => {
     if (!forgivingDebt) return;
 
     await db.debts.update(forgivingDebt.id, { status: DebtStatus.WAIVED });
+
+    // Also write waiver to double-entry
+    try {
+      const dType = forgivingDebt.type === DebtType.LENT ? 'lent' : 'owed';
+      // Calculate remaining amount
+      const installments = debtInstallments?.filter(di => di.debtId === forgivingDebt.id) || [];
+      const paidAmount = installments.reduce((sum, inst) => sum + inst.amount, 0);
+      const remainingAmount = Math.max(0, forgivingDebt.amount - paidAmount);
+      if (remainingAmount > 0) {
+        await accountingAdapter.recordDebtWaive({
+          debtId: forgivingDebt.id,
+          debtType: dType as 'owed' | 'lent',
+          amount: remainingAmount,
+          date: new Date().toISOString().slice(0, 10),
+          note: `Debt waived for ${forgivingDebt.person}`,
+        });
+      }
+    } catch (e) { console.error('v2 debt waive failed:', e); }
+
     closeAllModals();
   };
 
@@ -1388,7 +1359,7 @@ const App: FC = () => {
   const handleSellInvestment = async (data: { wallet: string; createTransaction: boolean; sellDate: string }) => {
     if (!sellingInvestment) return;
 
-    await db.transaction('rw', db.investmentTransactions, db.transactionItems, db.investments, async () => {
+    await db.transaction('rw', [db.investmentTransactions, db.investments, db.transactions_v2], async () => {
         const finalWithdrawal: InvestmentTransaction = {
             id: crypto.randomUUID(),
             investmentId: sellingInvestment.id,
@@ -1400,17 +1371,18 @@ const App: FC = () => {
         await db.investmentTransactions.add(finalWithdrawal);
 
         if (data.createTransaction) {
-            const newTransaction: Transaction = {
-                id: crypto.randomUUID(),
-                type: TransactionType.INCOME,
+            // Write to double-entry ledger (PRIMARY TRUTH)
+            try {
+              const wAccId = resolveWalletAccId(data.wallet);
+              await accountingAdapter.recordInvestmentSell({
+                investmentId: sellingInvestment.id,
                 amount: sellingInvestment.currentValue,
                 date: data.sellDate,
+                walletAccountId: wAccId,
                 description: `Sold investment: ${sellingInvestment.name}`,
-                wallet: data.wallet,
                 investmentTransactionId: finalWithdrawal.id,
-                isReconciliation: false,
-            };
-            await db.transactionItems.add(newTransaction);
+              });
+            } catch (e) { console.error('v2 investment sell failed:', e); }
         }
 
         await db.investments.update(sellingInvestment.id, { status: InvestmentStatus.SOLD });
@@ -1444,7 +1416,9 @@ const App: FC = () => {
     projectedPeriodicIncome,
     projectedPeriodicExpense,
   } = useMemo(() => {
-    if (!transactions) return { filteredTransactions: [], periodicIncome: 0, periodicExpense: 0, projectedPeriodicIncome: 0, projectedPeriodicExpense: 0 };
+    // Use presented (double-entry) transactions when available, else legacy
+    const source = presentedTransactions ?? transactions;
+    if (!source) return { filteredTransactions: [], periodicIncome: 0, periodicExpense: 0, projectedPeriodicIncome: 0, projectedPeriodicExpense: 0 };
     
     let periodStartDate: Date;
     let periodEndDate: Date;
@@ -1483,12 +1457,9 @@ const App: FC = () => {
     let expense = 0;
     let projIncome = 0;
     let projExpense = 0;
-    let overallOpIncome = 0;
-    let overallOpExpense = 0;
-    const periodTransactions: Transaction[] = [];
+    const periodTransactions: typeof source = [];
     
-    transactions.forEach(tx => {
-      // 1. Filter for List View and Periodic Stats
+    source.forEach(tx => {
       const txDate = new Date(tx.date + 'T00:00:00');
 
       const walletMatch = filter.wallet === 'all' || tx.wallet === filter.wallet;
@@ -1498,7 +1469,7 @@ const App: FC = () => {
         periodTransactions.push(tx);
         if (tx.isReconciliation || (filter.wallet === 'all' && tx.transferId)) return;
         
-        if (tx.type === TransactionType.INCOME) {
+        if (tx.type === 'income') {
             projIncome += tx.amount;
             if (txDate <= today) income += tx.amount;
         } else {
@@ -1510,8 +1481,8 @@ const App: FC = () => {
 
     const finalFilteredTransactions = periodTransactions.filter(tx => {
       switch (filter.transactionType) {
-        case TransactionFilterType.INCOME: return tx.type === TransactionType.INCOME && !tx.transferId && !tx.isReconciliation;
-        case TransactionFilterType.EXPENSE: return tx.type === TransactionType.EXPENSE && !tx.transferId && !tx.isReconciliation;
+        case TransactionFilterType.INCOME: return tx.type === 'income' && !tx.transferId && !tx.isReconciliation;
+        case TransactionFilterType.EXPENSE: return tx.type === 'expense' && !tx.transferId && !tx.isReconciliation;
         case TransactionFilterType.TRANSFER: return !!tx.transferId;
         case TransactionFilterType.ADJUSTMENT: return tx.isReconciliation;
         default: return true;
@@ -1525,114 +1496,86 @@ const App: FC = () => {
         projectedPeriodicIncome: projIncome, 
         projectedPeriodicExpense: projExpense,
     };
-  }, [transactions, filter, today]);
+  }, [presentedTransactions, transactions, filter, today]);
 
   const {
     periodicOperationalIncome,
     periodicOperationalExpense,
   } = useMemo(() => {
-    if (!transactions) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
+    if (!doubleEntryTxns) return { periodicOperationalIncome: 0, periodicOperationalExpense: 0 };
     
-    let periodStartDate: Date;
-    let periodEndDate: Date;
+    let start: Date;
+    let end: Date;
 
-    // 1. Define the Period Window
     switch (cashFlowFilter.period) {
-      case FilterPeriod.TODAY: {
-        periodStartDate = new Date(today);
-        periodStartDate.setHours(0, 0, 0, 0);
-        periodEndDate = new Date(today);
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.TODAY:
+        start = new Date(today);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.THIS_MONTH: {
-        periodStartDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        // We cap the end date at 'today' to automatically exclude future transactions
-        periodEndDate = new Date(today); 
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.THIS_MONTH:
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.LAST_MONTH: {
-        periodStartDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        periodEndDate = new Date(today.getFullYear(), today.getMonth(), 0);
-        periodEndDate.setHours(23, 59, 59, 999);
+      case FilterPeriod.LAST_MONTH:
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        end.setHours(23, 59, 59, 999);
         break;
-      }
-      case FilterPeriod.CUSTOM: {
-        periodStartDate = new Date(filter.startDate + 'T00:00:00');
-        periodEndDate = new Date(filter.endDate + 'T23:59:59');
+      case FilterPeriod.CUSTOM:
+        start = new Date(cashFlowFilter.startDate + 'T00:00:00');
+        end = new Date(cashFlowFilter.endDate + 'T23:59:59');
         break;
-      }
       case FilterPeriod.ALL:
       default:
-        periodStartDate = new Date(0);
-        periodEndDate = new Date(today); // Cap 'All' at today as well
-        periodEndDate.setHours(23, 59, 59, 999);
+        start = new Date(0);
+        end = new Date(today);
+        end.setHours(23, 59, 59, 999);
         break;
     }
 
-    let income = 0;
-    let expense = 0;
-
-    transactions.forEach(tx => {
-      // 3. Filter Operational Types (Exclude irrelevant types)
-      if (
-        tx.isReconciliation || 
-        tx.transferId || 
-        tx.debtId || 
-        tx.investmentTransactionId
-      ) return;
-
-      const txDate = new Date(tx.date + 'T00:00:00');
-
-      // 4. Strict Date Check
-      // We check if it is within the period AND strictly in the past/present
-      if (txDate >= periodStartDate && txDate <= periodEndDate && txDate <= today) {
-        if (tx.type === TransactionType.INCOME) {
-            income += tx.amount;
-        } else {
-            expense += tx.amount;
-        }
-      }
-    });
+    const { income, expense } = computePeriodicFlow(
+      doubleEntryTxns,
+      { start, end },
+      ['transfer', 'adjustment', 'debt_create', 'investment_buy', 'investment_sell']
+    );
 
     return {
         periodicOperationalIncome: income,
         periodicOperationalExpense: expense 
     };
-  }, [cashFlowFilter, transactions, today]);
+  }, [cashFlowFilter, doubleEntryTxns, today]);
   
-  
-
   const { currentBalance, projectedBalance, globalBalance } = useMemo(() => {
-    if (!transactions)
+    if (!doubleEntryTxns || !walletAccounts) {
+      console.log("[BalanceDebug] Missing data:", { hasTxns: !!doubleEntryTxns, accountsCount: walletAccounts?.length });
       return { currentBalance: 0, projectedBalance: 0, globalBalance: 0 };
+    }
 
-    let current = 0;
-    let projected = 0;
-    let global = 0;
+    const activeWallets = (filter.wallet && filter.wallet !== 'All Wallets' && filter.wallet !== 'all') 
+      ? walletAccounts.filter(a => a.id === filter.wallet || a.name === filter.wallet) 
+      : walletAccounts;
 
-    const relevantTransactions =
-      filter.wallet === "all"
-        ? transactions
-        : transactions.filter((tx) => tx.wallet === filter.wallet);
+    const endOfToday = new Date(today);
+    endOfToday.setHours(23, 59, 59, 999);
 
-    relevantTransactions.forEach((tx) => {
-      const txDate = new Date(tx.date + "T00:00:00");
-      const amount =
-        tx.type === TransactionType.INCOME ? tx.amount : -tx.amount;
-      projected += amount;
-      if (txDate <= today) current += amount;
-    });
+    const current = computeTotalWalletBalance(doubleEntryTxns, activeWallets, { start: new Date(0), end: endOfToday });
+    const projected = computeTotalWalletBalance(doubleEntryTxns, activeWallets); // All time
+    
 
-    // Calculate global balance (all wallets) for Health check
-    transactions.forEach((tx) => {
-      const txDate = new Date(tx.date + "T00:00:00");
-      if (txDate <= today) {
-        const amount =
-          tx.type === TransactionType.INCOME ? tx.amount : -tx.amount;
-        global += amount;
-      }
+
+    const global = computeTotalWalletBalance(doubleEntryTxns, walletAccounts, { start: new Date(0), end: endOfToday });
+
+    console.log("[BalanceDebug] Calculated:", { 
+      txnsCount: doubleEntryTxns.length, 
+      walletsCount: walletAccounts.length,
+      current,
+      global,
+      filterWallet: filter.wallet,
+      walletIds: walletAccounts.map(a => a.id),
+      endOfToday: endOfToday.toISOString()
     });
 
     return {
@@ -1640,7 +1583,7 @@ const App: FC = () => {
       projectedBalance: projected,
       globalBalance: global,
     };
-  }, [transactions, filter.wallet, today]);
+  }, [doubleEntryTxns, walletAccounts, filter.wallet, today]);
 
   const filteredDebts = useMemo(() => {
     if (!debts) return [];
@@ -1774,21 +1717,17 @@ const App: FC = () => {
         return;
     }
 
-    const newTransaction: Transaction = {
-        id: crypto.randomUUID(),
-        type: difference > 0 ? TransactionType.INCOME : TransactionType.EXPENSE,
-        amount: Math.abs(difference),
-        date: getLocalDateString(),
-        description: "Balance Adjustment",
-        isReconciliation: true,
-        wallet: filter.wallet !== 'all' ? filter.wallet : wallets[0] || 'Default',
-    };
+    if (!appFirstUseDate) {
+      await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
+    }
 
-    await db.transaction('rw', db.transactionItems, db.settings, async () => {
-        if (!appFirstUseDate) {
-            await db.settings.put({ key: 'appFirstUseDate', value: new Date().toISOString() });
-        }
-        await db.transactionItems.add(newTransaction);
+    const walletName = filter.wallet !== 'all' ? filter.wallet : wallets[0] || 'Default';
+    const wAccId = resolveWalletAccId(walletName);
+    await accountingAdapter.recordAdjustment({
+      walletAccountId: wAccId,
+      amount: difference,
+      date: getLocalDateString(),
+      description: 'Balance Adjustment',
     });
 
     setIsReconcileModalOpen(false);
@@ -1800,7 +1739,7 @@ const App: FC = () => {
 
     switch(view) {
       case 'transactions':
-        transactionCSV = generateTransactionsCSV(filteredTransactions);
+        transactionCSV = generateTransactionsCSV(filteredTransactions as any);
         if (transactionCSV) hasData = true;
         break;
       case 'debts':
@@ -1833,13 +1772,25 @@ const App: FC = () => {
   };
   
   const handleExportAllData = async () => {
-    const transactionCSV = generateTransactionsCSV(transactions || []);
-    const debtCSV = generateDebtsCSV(debts || []);
-    const debtInstallmentsCSV = generateDebtInstallmentsCSV(debtInstallments || []);
-    const investmentCSV = generateInvestmentsCSV(investments || []);
-    const investmentTransactionsCSV = generateInvestmentTransactionsCSV(investmentTransactions || []);
+    // Fetch data directly from DB to ensure export works even when UI state (like during migration) isn't populated
+    const dbDebts = await db.debts.toArray();
+    const dbDebtInstallments = await db.debtInstallements.toArray();
+    const dbInvestments = await db.investments.toArray();
+    const dbInvestmentTransactions = await db.investmentTransactions.toArray();
+    const dbAccounts = await db.accounts.toArray();
+    const dbDoubleEntryTransactions = await db.transactions_v2.toArray();
+
+    // Removed legacy transaction export; data exists fully in doubleEntryTransactionsCSV
+    const transactionCSV = '';
+
+    const debtCSV = generateDebtsCSV(dbDebts);
+    const debtInstallmentsCSV = generateDebtInstallmentsCSV(dbDebtInstallments);
+    const investmentCSV = generateInvestmentsCSV(dbInvestments);
+    const investmentTransactionsCSV = generateInvestmentTransactionsCSV(dbInvestmentTransactions);
+    const accountsCSV = generateAccountsCSV(dbAccounts);
+    const doubleEntryTransactionsCSV = generateDoubleEntryTransactionsCSV(dbDoubleEntryTransactions);
     
-    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV;
+    const hasData = transactionCSV || debtCSV || debtInstallmentsCSV || investmentCSV || investmentTransactionsCSV || accountsCSV || doubleEntryTransactionsCSV;
 
     if (!hasData) {
         showAlert('No Data to Export', 'There is no data to export.');
@@ -1847,7 +1798,7 @@ const App: FC = () => {
     }
 
     try {
-        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV });
+        await exportToZip({ transactionCSV, debtCSV, debtInstallmentsCSV, investmentCSV, investmentTransactionsCSV, accountsCSV, doubleEntryTransactionsCSV });
         // Update last backup date on successful export
         await db.settings.put({ key: 'lastBackupDate', value: new Date().toISOString() });
         setBackupReminder({ show: false, days: null });
@@ -1868,8 +1819,10 @@ const App: FC = () => {
         const { successful: importedDebtInstallments, errors: debtInstallmentErrors } = files['debtInstallments.csv'] ? parseDebtInstallmentsCSV(files['debtInstallments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestments, errors: invErrors } = files['investments.csv'] ? parseInvestmentsCSV(files['investments.csv']) : { successful: [], errors: [] };
         const { successful: importedInvestmentTxs, errors: invTxErrors } = files['investment_transactions.csv'] ? parseInvestmentTransactionsCSV(files['investment_transactions.csv']) : { successful: [], errors: [] };
+        const { successful: importedAccounts, errors: accErrors } = files['accounts.csv'] ? parseAccountsCSV(files['accounts.csv']) : { successful: [], errors: [] };
+        const { successful: importedDoubleTxns, errors: doubleTxErrors } = files['double_entry_transactions.csv'] ? parseDoubleEntryTransactionsCSV(files['double_entry_transactions.csv']) : { successful: [], errors: [] };
 
-        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors];
+        const allParseErrors = [...txErrors, ...debtErrors, ...debtInstallmentErrors, ...invErrors, ...invTxErrors, ...accErrors, ...doubleTxErrors];
 
         // Data integrity check: Ensure investment transactions have a valid parent.
         const existingInvestmentIds = new Set((await db.investments.toArray()).map(i => i.id));
@@ -1893,13 +1846,15 @@ const App: FC = () => {
         const allErrors = [...allParseErrors, ...orphanedInvestmentTxErrors];
 
         // Fix: Pass tables as an array to db.transaction and add type to summary
-        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings], async () => {
+        const summary: ImportResultSummary = await db.transaction<ImportResultSummary>('rw', [db.transactionItems, db.debts, db.debtInstallements, db.investments, db.investmentTransactions, db.settings, db.accounts, db.transactions_v2], async () => {
             const resultSummary: ImportResultSummary = {
                 tx: { added: 0, updated: 0 },
                 debt: { added: 0, updated: 0 },
                 debtInst: {added: 0, updated: 0 },
                 inv: { added: 0, updated: 0 },
-                invTx: { added: 0, updated: 0 }
+                invTx: { added: 0, updated: 0 },
+                acc: { added: 0, updated: 0 },
+                doubleTx: { added: 0, updated: 0 }
             };
 
             // Process Investments
@@ -1922,7 +1877,7 @@ const App: FC = () => {
                 await db.investmentTransactions.bulkPut(validInvestmentTxs);
             }
 
-            // Process Transactions
+            // Process Transactions (Legacy import trigger)
             if (importedTransactions.length > 0) {
                 const existingTxIds = new Set(await db.transactionItems.where('id').anyOf(importedTransactions.map(i => i.id)).primaryKeys());
                 importedTransactions.forEach(tx => {
@@ -1930,7 +1885,10 @@ const App: FC = () => {
                     else resultSummary.tx.added++;
                 });
                 await db.transactionItems.bulkPut(importedTransactions);
+                // Force migration to run again to convert these legacy transactions into double-entry format
+                await db.settings.put({ key: 'migrationV3Complete', value: false });
             }
+
 
             // Process Debts
             if (importedDebts.length > 0) {
@@ -1956,7 +1914,33 @@ const App: FC = () => {
               });
               await db.debtInstallements.bulkPut(importedDebtInstallments)
             }
+
+            // Process Accounts
+            if (importedAccounts.length > 0) {
+                const existingAccIds = new Set(await db.accounts.where('id').anyOf(importedAccounts.map(i => i.id)).primaryKeys());
+                importedAccounts.forEach(acc => {
+                    if (existingAccIds.has(acc.id)) resultSummary.acc.updated++;
+                    else resultSummary.acc.added++;
+                });
+                await db.accounts.bulkPut(importedAccounts);
+            }
+
+            // Process Double Entry Transactions
+            if (importedDoubleTxns.length > 0) {
+                const existingDoubleTxIds = new Set(await db.transactions_v2.where('id').anyOf(importedDoubleTxns.map(i => i.id)).primaryKeys());
+                importedDoubleTxns.forEach(tx => {
+                    if (existingDoubleTxIds.has(tx.id)) resultSummary.doubleTx.updated++;
+                    else resultSummary.doubleTx.added++;
+                });
+                await db.transactions_v2.bulkPut(importedDoubleTxns);
+            }
             
+            // Trigger migration if old transactions were imported (so they are converted to Double Entry)
+            if (importedTransactions.length > 0 || importedDebts.length > 0 || importedInvestments.length > 0) {
+                await db.settings.put({ key: 'migrationV3Complete', value: false });
+                await runMigrationV3();
+            }
+
             return resultSummary;
         });
 
@@ -1974,7 +1958,7 @@ const App: FC = () => {
         setImportSummaryModal({ 
             isOpen: true, 
             summary: { 
-                tx: { added: 0, updated: 0 }, debt: { added: 0, updated: 0 }, inv: { added: 0, updated: 0 }, invTx: { added: 0, updated: 0 }, errors: [],
+                tx: { added: 0, updated: 0 }, debt: { added: 0, updated: 0 }, debtInst: {added: 0, updated: 0}, inv: { added: 0, updated: 0 }, invTx: { added: 0, updated: 0 }, acc: { added: 0, updated: 0 }, doubleTx: { added: 0, updated: 0 }, errors: [],
                 error: "Import failed. Please make sure you are using a valid .zip file exported from this app. See the browser console for more details."
             }
         });
@@ -2003,10 +1987,10 @@ const App: FC = () => {
     setBackupReminder({ show: false, days: null });
   };
 
-  const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined);
+  const isLoading = appStatus === 'UNLOCKED' && (transactions === undefined || debts === undefined || investments === undefined || investmentTransactions === undefined || settingsArray === undefined || doubleEntryTxns === undefined || allAccounts === undefined);
   
   if (appStatus === 'LOADING' || appStatus === 'MIGRATING') {
-    return <FullScreenLoader message={appStatus === 'MIGRATING' ? 'Securing your data...' : 'Loading...'} />;
+    return <FullScreenLoader message={appStatus === 'MIGRATING' ? migrationProgress || 'Migrating your data...' : 'Loading...'} />;
   }
   
   if (pendingRecoveryPhrase) {
@@ -2031,6 +2015,17 @@ const App: FC = () => {
             )}
         </>
       );
+  }
+
+  if (appStatus === 'MIGRATION_REQUIRED') {
+    return (
+      <MigrationRequiredModal
+        handleExportAllData={handleExportAllData}
+        handleRunMigration={handleRunMigration}
+        migrationBackupDone={migrationBackupDone}
+        setMigrationBackupDone={setMigrationBackupDone}
+      />
+    );
   }
 
   if (isLoading) {
@@ -2114,7 +2109,7 @@ const App: FC = () => {
                   defaultPeriod={defaultFilterPeriod}
                 />
                 <TransactionList
-                  transactions={filteredTransactions}
+                  transactions={filteredTransactions as any}
                   onEdit={handleOpenEditForm}
                   onDelete={handleOpenDeleteModal}
                   animatingOutIds={animatingOutIds}
@@ -2298,7 +2293,7 @@ const App: FC = () => {
         currentDefault={defaultFilterPeriod}
         currentDefaultWallet={correctedDefaultWallet}
         currentDeficitThreshold={deficitThreshold}
-        wallets={wallets}
+        walletAccounts={walletAccounts}
         onSave={handleSaveSettings}
         onShowOnboarding={handleShowOnboarding}
         onOpenBulkAdd={() => { setIsSettingsModalOpen(false); setIsBulkAddModalOpen(true); }}
@@ -2406,3 +2401,7 @@ const App: FC = () => {
 };
 
 export default App;
+
+if (typeof window !== 'undefined') {
+  (window as any).db = db;
+}

@@ -256,3 +256,72 @@ export const parseInvestmentTransactionsCSV = (csvString: string): ParseResult<I
     });
     return result;
 };
+
+// --- Double-Entry Importers ---
+
+import type { Account, AccountType } from '../src/db/accounts';
+import type { DoubleEntryTransaction } from '../src/db/doubleEntryTypes';
+
+export const parseAccountsCSV = (csvString: string): ParseResult<Account> => {
+    const data = parseCSV(csvString);
+    if (data.length < 2) return { successful: [], errors: [] };
+
+    const result: ParseResult<Account> = { successful: [], errors: [] };
+
+    data.slice(1).forEach(row => {
+        try {
+            if (row.length < 4) throw new Error(`Incorrect number of columns. Expected at least 4, got ${row.length}.`);
+            const [id, name, type, subtype, createdAt] = row;
+
+            const account: Account = {
+                id,
+                name,
+                type: type as AccountType,
+                subtype: subtype || undefined,
+                isActive: true, // Assuming active if exported
+                createdAt: createdAt || undefined,
+            };
+
+            if (!id || !name || !type) throw new Error("Missing required fields: ID, Name, or Type.");
+            
+            result.successful.push(account);
+        } catch (e: any) {
+            result.errors.push({ originalRow: row, message: e.message || 'Malformed row' });
+        }
+    });
+    return result;
+};
+
+export const parseDoubleEntryTransactionsCSV = (csvString: string): ParseResult<DoubleEntryTransaction> => {
+    const data = parseCSV(csvString);
+    if (data.length < 2) return { successful: [], errors: [] };
+
+    const result: ParseResult<DoubleEntryTransaction> = { successful: [], errors: [] };
+
+    data.slice(1).forEach(row => {
+        try {
+            if (row.length < 5) throw new Error(`Incorrect number of columns. Expected at least 5, got ${row.length}.`);
+            const [id, date, note, kind, entriesJson, createdAt] = row;
+
+            const entries = JSON.parse(entriesJson);
+            if (!Array.isArray(entries)) throw new Error("Entries must be a JSON array.");
+
+            const tx: DoubleEntryTransaction = {
+                id,
+                date,
+                note: note || undefined,
+                entries,
+                meta: kind ? { kind: kind as any } : undefined,
+                createdAt: createdAt || undefined,
+                entryAccountIds: entries.map((ent)=>ent.accountId as string)
+            };
+
+            if (!id || !date || !entries) throw new Error("Missing required fields: ID, Date, or Entries.");
+
+            result.successful.push(tx);
+        } catch (e: any) {
+            result.errors.push({ originalRow: row, message: e.message || 'Malformed row' });
+        }
+    });
+    return result;
+};

@@ -120,7 +120,7 @@ Interested in contributing or running the project for development? Follow these 
 -   **Framework:** React 19
 -   **Language:** TypeScript
 -   **Styling:** Tailwind CSS v4
--   **Database:** IndexedDB (via Dexie.js)
+-   **Database:** IndexedDB
 -   **Security:** Web Crypto API for client-side encryption
 -   **Icons:** Heroicons
 -   **Packaging:** JSZip (for CSV export)

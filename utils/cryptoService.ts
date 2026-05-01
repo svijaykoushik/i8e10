@@ -1,7 +1,7 @@
 import { setupInWorker, verifyInWorker, recoverInWorker, encryptInWorker, decryptInWorker } from './cryptoWorkerClient';
 
 // --- Helper Functions ---
-const stringToArrayBuffer = (str: string): ArrayBuffer => new TextEncoder().encode(str).buffer;
+const stringToArrayBuffer = (str: string): ArrayBuffer => new TextEncoder().encode(str).buffer as ArrayBuffer;
 const arrayBufferToString = (buffer: ArrayBuffer): string => new TextDecoder().decode(buffer);
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => btoa(String.fromCharCode(...new Uint8Array(buffer)));
 export const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
