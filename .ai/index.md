@@ -25,6 +25,7 @@ These files define the fundamental rules and knowledge required to contribute to
 | [**Conventions**](./context/conventions.md) | Coding standards, patterns, and library usage guidelines. |
 | [**UI Conventions**](./context/ui-conventions.md) | Design system, color styling, and semantic visual attributes. |
 | [**UX Guidelines**](./context/ux-guidelines.md) | Principles for low-friction entry, bilingual support, and human-centric data. |
+| [**Build Optimization**](./context/build-optimization.md) | Decisions and rules for manual chunking and performance. |
 | [**Environment Setup**](./context/env_setup.md) | Configuration for environment variables and local setup. |
 
 ## Project Knowledge

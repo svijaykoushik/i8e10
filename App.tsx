@@ -57,7 +57,7 @@ import { computeWalletBalance, computeTotalWalletBalance, computePeriodicFlow } 
 import { presentAllForUI, type PresentedTransaction } from './utils/transactionPresenter';
 import type { DoubleEntryTransaction } from './src/db/doubleEntryTypes';
 import type { Account } from './src/db/accounts';
-import { walletAccountId } from './src/db/accounts';
+import { walletAccountId, createDebtAccount, createInvestmentAccount } from './src/db/accounts';
 import { MigrationRequiredModal } from './components/MigrationRequiredModal';
 
 // --- Recovery Modals (Inlined to avoid new files) ---
@@ -1078,7 +1078,7 @@ const App: FC = () => {
             // Create debt account + double-entry transaction
             try {
               const dType = debtData.type === DebtType.OWED ? 'owed' : 'lent';
-              const { createDebtAccount } = await import('./src/db/accounts');
+              // createDebtAccount is now statically imported
               const debtAcc = createDebtAccount(newDebt.id, dType as 'owed' | 'lent', debtData.person);
               try { await db.accounts.add(debtAcc); } catch {}
               if (createTransaction) {
@@ -1169,7 +1169,7 @@ const App: FC = () => {
                 // Also write to double-entry
                 if (createTransaction && wallet) {
                   try {
-                    const { createInvestmentAccount } = await import('./src/db/accounts');
+                    // createInvestmentAccount is now statically imported
                     const invAcc = createInvestmentAccount(newInvestment.id, investmentData.name);
                     try { await db.accounts.add(invAcc); } catch {}
                     const wAccId = resolveWalletAccId(wallet);

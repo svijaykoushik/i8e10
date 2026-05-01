@@ -36,6 +36,25 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "."),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              // Preserve dynamic imports for heavy libraries
+              if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('dompurify')) {
+                return; 
+              }
+              if (id.includes('react') || id.includes('framer-motion')) {
+                return 'vendor-core';
+              }
+              return 'vendor';
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 600, // Slightly increase limit since we split core vendors
+    },
     plugins: [
       react(),
       tailwindcss(),
