@@ -12,7 +12,7 @@ describe('pdfGenerator', () => {
                     amount: 5000,
                     date: '2023-10-01',
                     description: 'Salary',
-                    walletId: 'w1'
+                    wallet: 'w1'
                 },
                 {
                     id: '2',
@@ -20,7 +20,7 @@ describe('pdfGenerator', () => {
                     amount: 1500,
                     date: '2023-10-05',
                     description: 'Rent',
-                    walletId: 'w1'
+                    wallet: 'w1'
                 },
                 {
                     id: '3',
@@ -28,7 +28,7 @@ describe('pdfGenerator', () => {
                     amount: 500,
                     date: '2023-10-10',
                     description: 'Groceries',
-                    walletId: 'w1'
+                    wallet: 'w1'
                 },
                 {
                     id: '4',
@@ -36,7 +36,7 @@ describe('pdfGenerator', () => {
                     amount: 200,
                     date: '2023-10-15',
                     description: 'Bonus',
-                    walletId: 'w1'
+                    wallet: 'w1'
                 }
             ];
 
