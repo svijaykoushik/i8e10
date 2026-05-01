@@ -100,7 +100,7 @@ export async function generateIncomeStatementPDF(transactions: Transaction[], st
 
             [{ content: `NET ${netFlow >= 0 ? 'SURPLUS' : 'DEFICIT'}`, styles: { fontStyle: 'bold', fontSize: 12, textColor: [0, 0, 0] } }, 
              { content: formatCurrency(netFlow), styles: { fontStyle: 'bold', fontSize: 12, textColor: [0, 0, 0] } }],
-            [{ content: `(${numberToWords(netFlow)})`, styles: { fontStyle: 'italic', fontSize: 9, textColor: [100, 100, 100] } }, ''],
+            [{ content: `(A net ${netFlow >= 0 ? 'surplus' : 'deficit'} of ${numberToWords(netFlow)})`, styles: { fontStyle: 'italic', fontSize: 9, textColor: [100, 100, 100] } }, ''],
         ],
         
         // --- 3. Custom Drawing for Accounting Lines ---
@@ -138,8 +138,15 @@ export async function generateIncomeStatementPDF(transactions: Transaction[], st
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
     doc.text(`Statement Date: ${formatDate(new Date())}`, 14, finalY + 30);
+
     doc.setFontSize(8);
-    doc.text(`Generated on: ${formatDate(new Date())} at ${new Date().toLocaleTimeString('en-IN')}`, 14, 280);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Generated on: ${formatDate(new Date())} at ${new Date().toLocaleTimeString('en-IN')}`, 14, 278);
+    
+    // Fine print
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text("DISCLAIMER: This statement is based on the entries made in the application. Always verify with actual records for accuracy.", 14, 283);
 
     doc.save(`i8e10-Income-Statement-${new Date().toISOString().split('T')[0]}.pdf`);
 }

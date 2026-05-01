@@ -26,6 +26,9 @@ test.describe('Reports UI E2E Tests', () => {
 
     // 4. Select a period
     const periodSelect = page.getByLabel(/Time Period/i);
+    await periodSelect.selectOption('last_3_months');
+    await expect(page.getByRole('button', { name: /Generate PDF/i })).toBeVisible();
+
     await periodSelect.selectOption('ytd');
 
     // 5. Generate PDF button exists

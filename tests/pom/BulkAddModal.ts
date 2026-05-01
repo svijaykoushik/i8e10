@@ -4,7 +4,8 @@ export class BulkAddModal {
   constructor(private page: Page) {}
 
   async open() {
-    await this.page.getByLabel('Open settings').click();
+    await this.page.getByLabel('Open menu').click();
+    await this.page.getByRole('menuitem', { name: /Settings/i }).click();
     await this.page.getByRole('button', { name: /Bulk Add/i }).click();
     await this.page.waitForSelector('text=Bulk Add Transactions', { state: 'visible' });
   }
