@@ -37,3 +37,11 @@ A custom middleware in `utils/db.ts` intercepts `add`, `put`, and `get` operatio
 ## Routing
 The app uses a custom "view" based routing system (state `activeView` in `App.tsx`) instead of a library like `react-router`.
 -   **Views**: `transactions`, `debts`, `investments`, `health` (Financial Health).
+
+## Reporting & Document Generation
+The application supports client-side PDF generation for financial reports.
+-   **Engine**: `jsPDF` with `jspdf-autotable`.
+-   **Logic**: Encapsulated in `utils/pdfGenerator.ts`.
+-   **Utilities**: `utils/numberToWords.ts` provides Indian numbering system word conversion for financial amounts.
+-   **Implementation**: Reports are generated entirely in the browser using the current decrypted state of the database.
+-   **Standards**: Follows Indian financial formatting (en-IN locale, Rs symbol, DD/MM/YYYY dates).

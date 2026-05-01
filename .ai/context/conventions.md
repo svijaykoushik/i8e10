@@ -17,6 +17,11 @@
 -   **Double-Entry Adapter**: Use `accountingAdapter.ts` to fetch and transform double-entry records (`transactions_v2`) into the standard `Transaction` UI format.
 -   **Transactions**: Use `db.transaction('rw', [tables], async () => { ... })` for atomic multi-table updates.
 
+## Filtering & Time Periods
+- **Standard Options**: `TODAY`, `THIS_MONTH`, `LAST_MONTH`, `LAST_3_MONTHS`, `YTD`, `ALL`, `CUSTOM`.
+- **Implementation**: Period logic is handled centrally in `App.tsx` and reused via prop drilling or shared filtering logic in components like `ReportModal`.
+- **Custom Periods**: Require `startDate` and `endDate` fields in ISO string format.
+
 ## Styling (Tailwind)
 -   **Version**: Tailwind CSS v4.
 -   **Usage**: Utility classes directly in `className`.

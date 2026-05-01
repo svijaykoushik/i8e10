@@ -52,6 +52,15 @@
   - Backdrop: `bg-slate-900/80 backdrop-blur-sm`.
   - Container: `bg-white dark:bg-slate-800 rounded-2xl`.
 
+### Navigation & Actions
+- **Header Overflow Menu**: A vertical triple-dot menu in the header consolidates global actions (Settings, Reports). 
+  - Accessibility: Uses `role="menu"` and `role="menuitem"`.
+  - Behavior: Closes automatically upon item selection.
+- **Report Modals**: Standard pattern for generating documents.
+  - Controls: Includes period selection (select dropdown) and a primary action button (e.g., "Generate PDF").
+  - Preview/Feedback: Uses loading states or alerts if no data is available for the selected period.
+
 ## Typography
 - **Numbers**: Generally formatted with `Intl.NumberFormat` for currency ('en-IN').
-- **Dates**: `en-GB` format (DD MMM YYYY).
+- **Dates**: `en-IN` format (DD/MM/YYYY) for reports and `en-GB` (DD MMM YYYY) for UI lists.
+- **Number-to-Words**: Used in financial documents to provide redundancy for totals (e.g., "Ten Thousand Rupees Only").
