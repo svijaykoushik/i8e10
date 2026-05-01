@@ -35,10 +35,10 @@ graph TD
 ```
 
 - **Persistence**: Data stays on the device across refreshes and restarts.
-- **Portability**: Data can be moved between devices via the [[Backup System]].
+- **Portability**: Data can be moved between devices via the [Backup System](../features/backup-system.md).
 - **Safety**: Multi-layered encryption ensures that even if the database file is accessed, the contents are unreadable without the password.
 
 ## Interlinks | இணைப்புகள்
-- [[Core Database]] - Technical schema details.
-- [[Auth & Encryption]] - Security layer for persisted data.
-- [[Backup System]] - How persistence is extended to external storage.
+- [Core Database](../modules/core-database.md) - Technical schema details.
+- [Auth & Encryption](../flows/auth-and-encryption.md) - Security layer for persisted data.
+- [Backup System](../features/backup-system.md) - How persistence is extended to external storage.

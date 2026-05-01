@@ -24,6 +24,6 @@ The "Delete All" feature (handled by `handleClearAllData` in `App.tsx`) provides
 Since i8e10 is local-first, "Delete All" removes all financial records and encryption keys from the device. There is no server-side backup to restore from, ensuring the user has absolute control over their data footprint.
 
 ## Interlinks | இணைப்புகள்
-- [[Core Database]] - The persistence layer being cleared.
-- [[Auth & Encryption]] - The encryption keys being destroyed.
-- [[User Journey]] - How the user returns to the setup phase.
+- [Core Database](../modules/core-database.md) - The persistence layer being cleared.
+- [Auth & Encryption](../flows/auth-and-encryption.md) - The encryption keys being destroyed.
+- [User Journey](../flows/user-journey.md) - How the user returns to the setup phase.

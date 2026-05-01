@@ -21,7 +21,7 @@ Investments in i8e10 use a **Point-in-Time Valuation** model.
 - **Gain/Loss**: The difference between Cost Basis and Current Value.
 
 ## Accounting Integration | கணக்கியல் ஒருங்கிணைப்பு
-Investments are treated as a special class of accounts in the [[Double-Entry Ledger]].
+Investments are treated as a special class of accounts in the [Double-Entry Ledger](../concepts/double-entry-ledger.md).
 - **Contribution**: Wallet (Credit) -> Investment Account (Debit).
 - **Withdrawal**: Investment Account (Credit) -> Wallet (Debit).
 - **Valuation Change**: Does not affect the ledger until realized (withdrawn), but is tracked for net-worth calculation.
@@ -38,5 +38,5 @@ Users can:
 - **Gain/Loss**: லாபம்/நஷ்டம்
 
 ## Interlinks | இணைப்புகள்
-- [[Accounting System]] - Ledger integration.
-- [[Financial Health]] - How investments contribute to savings and net worth.
+- [Accounting System](accounting-system.md) - Ledger integration.
+- [Financial Health](../features/financial-health.md) - How investments contribute to savings and net worth.

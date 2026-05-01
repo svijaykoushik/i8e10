@@ -31,14 +31,14 @@ This feature implements a client-side PDF generation pipeline using `jsPDF`. It 
 
 ### 3. Report Trigger | அறிக்கை தூண்டுதல்
 - **Location**: `components/ReportModal.tsx`
-- **Behavior**: Accessible via the [[Header Navigation]] overflow menu. Allows users to select predefined periods (YTD, Last 3 Months, etc.) or custom date ranges.
+- **Behavior**: Accessible via the [Header Navigation](header-navigation.md) overflow menu. Allows users to select predefined periods (YTD, Last 3 Months, etc.) or custom date ranges.
 
 ## Accounting Logic | கணக்கியல் தர்க்கம்
-The report calculates totals by iterating through [[Double-Entry Ledger]] records. 
+The report calculates totals by iterating through [Double-Entry Ledger](../concepts/double-entry-ledger.md) records. 
 - **Net Surplus**: Total Income > Total Expenses.
 - **Net Deficit**: Total Expenses > Total Income.
 - **Disclaimer**: Every report includes a fine print stating that data is based on application entries and should be verified against actual records.
 
 ## Interlinks | இணைப்புகள்
-- [[Double-Entry Ledger]] - The data source for reports.
-- [[Header Navigation]] - Where the report generation is triggered.
+- [Double-Entry Ledger](../concepts/double-entry-ledger.md) - The data source for reports.
+- [Header Navigation](header-navigation.md) - Where the report generation is triggered.

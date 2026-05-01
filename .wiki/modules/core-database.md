@@ -41,5 +41,5 @@ graph TD
 - **Transaction Depth**: Tracking nested transactions is crucial to prevent premature change notifications during multi-step operations.
 - **Middleware Error Handling**: Middleware should gracefully fallback to original results if encryption/decryption fails to avoid breaking the UI.
 
-[[Accounting System]] | [[Accounting System]]
-[[Local-First Security]] | [[Local-First Security]]
+[Accounting System](accounting-system.md) | [Accounting System](accounting-system.md)
+[Local-First Security](../concepts/local-first-security.md) | [Local-First Security](../concepts/local-first-security.md)

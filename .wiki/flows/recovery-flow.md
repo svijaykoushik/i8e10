@@ -49,5 +49,5 @@ A SHA-256 hash of the recovery phrase is stored during setup (`recoveryPhraseHas
 - The recovery flow resets the password but preserves all existing encrypted data.
 
 ## Interlinks | இணைப்புகள்
-- [[Auth & Encryption]] - The underlying key hierarchy.
-- [[Core Database]] - Where the wrapped keys are persisted.
+- [Auth & Encryption](auth-and-encryption.md) - The underlying key hierarchy.
+- [Core Database](../modules/core-database.md) - Where the wrapped keys are persisted.

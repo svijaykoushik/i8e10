@@ -39,6 +39,6 @@ Restoring data involves reversing the export process.
 Because backups are stored as standard CSV files within a Zip archive, users can view their data in any spreadsheet software (Excel, Google Sheets), ensuring long-term data sovereignty even without the app.
 
 ## Interlinks | இணைப்புகள்
-- [[Data Persistence]] - How data is stored between backups.
-- [[Auth & Encryption]] - Why backups are necessary (forgotten passwords).
-- [[User Journey]] - Where backup fits into the engagement lifecycle.
+- [Data Persistence](../concepts/data-persistence.md) - How data is stored between backups.
+- [Auth & Encryption](../flows/auth-and-encryption.md) - Why backups are necessary (forgotten passwords).
+- [User Journey](../flows/user-journey.md) - Where backup fits into the engagement lifecycle.

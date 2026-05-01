@@ -26,7 +26,7 @@ stateDiagram-v2
 ```
 
 ### 1. Creation | உருவாக்கம்
-When a debt is created, it affects the [[Double-Entry Ledger]]:
+When a debt is created, it affects the [Double-Entry Ledger](../concepts/double-entry-ledger.md):
 - **Lent**: Wallet (Credit) -> Debt Account (Debit).
 - **Borrowed**: Debt Account (Credit) -> Wallet (Debit).
 
@@ -35,7 +35,7 @@ Installments are tracked individually and linked to the parent debt. Each instal
 
 ### 3. Closure | நிறைவு
 - **Settled**: When installments equal the principal.
-- **Forgiven**: Using the [[Forgiving Reconciliation]] pattern, a debt can be closed without full repayment, balancing the discrepancy against the Equity account.
+- **Forgiven**: Using the [Forgiving Reconciliation](../concepts/forgiving-reconciliation.md) pattern, a debt can be closed without full repayment, balancing the discrepancy against the Equity account.
 
 ## Tamil Terminology | தமிழ் கலைச்சொற்கள்
 - **Lent**: கொடுத்த கடன் (Asset)
@@ -43,5 +43,5 @@ Installments are tracked individually and linked to the parent debt. Each instal
 - **Installment**: தவணை
 
 ## Interlinks | இணைப்புகள்
-- [[Accounting System]] - How debt transactions are recorded.
-- [[Forgiving Reconciliation]] - Used for closing bad debts.
+- [Accounting System](accounting-system.md) - How debt transactions are recorded.
+- [Forgiving Reconciliation](../concepts/forgiving-reconciliation.md) - Used for closing bad debts.

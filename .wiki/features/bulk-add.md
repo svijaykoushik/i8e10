@@ -37,5 +37,5 @@ The `BulkAddModal` provides real-time validation:
 Once confirmed, all valid lines are processed in a single database transaction. The app assigns a default wallet and date for any missing fields to ensure ledger integrity.
 
 ## Interlinks | இணைப்புகள்
-- [[Accounting System]] - Where bulk transactions are eventually recorded.
-- [[Double-Entry Ledger]] - The target data model for bulk entries.
+- [Accounting System](../modules/accounting-system.md) - Where bulk transactions are eventually recorded.
+- [Double-Entry Ledger](../concepts/double-entry-ledger.md) - The target data model for bulk entries.

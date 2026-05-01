@@ -53,5 +53,5 @@ Fields marked as sensitive (e.g., `amount`, `description`, `note`) are intercept
 To maintain UI responsiveness during heavy cryptographic operations (like PBKDF2), all crypto logic runs in a dedicated **Web Worker** (`utils/crypto.worker.ts`). The main thread only holds the imported `CryptoKey` in memory for the duration of the session.
 
 ## Interlinks | இணைப்புகள்
-- [[Core Database]] - Where encrypted data is stored.
-- [[Recovery Flow]] - How the Master Key is recovered if the password is lost.
+- [Core Database](../modules/core-database.md) - Where encrypted data is stored.
+- [Recovery Flow](recovery-flow.md) - How the Master Key is recovered if the password is lost.

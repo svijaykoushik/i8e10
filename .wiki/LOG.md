@@ -12,10 +12,10 @@ This file records every "Ingest" session, detailing the files read and changes m
 **Changes Made:**
 - Initialized `.wiki/` directory structure.
 - Created `.wiki/INDEX.md` with bilingual headings.
-- Created [[Core Database]] module page.
-- Created [[Accounting System]] module page.
-- Created [[Double-Entry Ledger]] concept page.
-- Created [[Forgiving Reconciliation]] concept page.
+- Created [Core Database](modules/core-database.md) module page.
+- Created [Accounting System](modules/accounting-system.md) module page.
+- Created [Double-Entry Ledger](concepts/double-entry-ledger.md) concept page.
+- Created [Forgiving Reconciliation](concepts/forgiving-reconciliation.md) concept page.
 
 **Lessons Learned:**
 - Double-entry validation is the bedrock of system stability.
@@ -30,10 +30,10 @@ This file records every "Ingest" session, detailing the files read and changes m
 - `tests/reports.e2e.test.ts`
 
 **Changes Made:**
-- Updated [[INDEX.md]] with required frontmatter and current `HEAD` SHA.
-- Created [[Income Statement]] feature page documenting the professional PDF generation pipeline.
-- Created [[Header Navigation]] feature page documenting the new overflow menu and standardized time-period filters.
-- Linked new features to existing [[Double-Entry Ledger]] and [[UI Architecture]] pages.
+- Updated [INDEX.md](INDEX.md) with required frontmatter and current `HEAD` SHA.
+- Created [Income Statement](features/income-statement.md) feature page documenting the professional PDF generation pipeline.
+- Created [Header Navigation](features/header-navigation.md) feature page documenting the new overflow menu and standardized time-period filters.
+- Linked new features to existing [Double-Entry Ledger](concepts/double-entry-ledger.md) and [UI Architecture](modules/ui-architecture.md) pages.
 
 **Lessons Learned:**
 - Client-side PDF generation provides a private, offline-first way to handle financial documentation.
@@ -51,12 +51,12 @@ Successfully ingested the new reporting system and UI navigation changes. The wi
 - `App.tsx`, `components/OnboardingGuide.tsx`
 
 **Changes Made:**
-- Created [[Auth & Encryption]] flow page documenting the zero-knowledge architecture and Master Key hierarchy.
-- Created [[Recovery Flow]] page documenting the 12-word phrase mechanism and sequence.
-- Created [[Bulk Add]] feature page documenting the multi-pass natural language parser.
-- Created [[Data Management]] feature page documenting the secure data erasure process.
-- Created [[User Journey]] flow page visualizing the lifecycle from onboarding to recovery.
-- Updated [[INDEX.md]] with the new knowledge categories (Features, Flows).
+- Created [Auth & Encryption](flows/auth-and-encryption.md) flow page documenting the zero-knowledge architecture and Master Key hierarchy.
+- Created [Recovery Flow](flows/recovery-flow.md) page documenting the 12-word phrase mechanism and sequence.
+- Created [Bulk Add](features/bulk-add.md) feature page documenting the multi-pass natural language parser.
+- Created [Data Management](features/data-management.md) feature page documenting the secure data erasure process.
+- Created [User Journey](flows/user-journey.md) flow page visualizing the lifecycle from onboarding to recovery.
+- Updated [INDEX.md](INDEX.md) with the new knowledge categories (Features, Flows).
 
 **Lessons Learned:**
 - Web Workers are essential for maintaining 60fps while performing heavy crypto derivations like PBKDF2.
@@ -72,11 +72,11 @@ Successfully ingested the new reporting system and UI navigation changes. The wi
 - `utils/db.ts`, `src/db/database.ts`
 
 **Changes Made:**
-- Created [[Backup System]] feature page documenting the reminder logic and Zip-based CSV bundling.
-- Created [[Interaction Model]] feature page documenting the FAB's dual-action (tap/long-press) behavior and PWA offline capabilities.
-- Created [[Data Persistence]] concept page documenting the IndexedDB middleware, schema evolution (V3), and portability.
-- Created [[Debt Management]] and [[Investment Tracking]] module pages documenting their specific ledger integrations and lifecycles.
-- Finalized [[INDEX.md]] with complete coverage of concepts, features, flows, and modules.
+- Created [Backup System](features/backup-system.md) feature page documenting the reminder logic and Zip-based CSV bundling.
+- Created [Interaction Model](features/interaction-model.md) feature page documenting the FAB's dual-action (tap/long-press) behavior and PWA offline capabilities.
+- Created [Data Persistence](concepts/data-persistence.md) concept page documenting the IndexedDB middleware, schema evolution (V3), and portability.
+- Created [Debt Management](modules/debt-management.md) and [Investment Tracking](modules/investment-tracking.md) module pages documenting their specific ledger integrations and lifecycles.
+- Finalized [INDEX.md](INDEX.md) with complete coverage of concepts, features, flows, and modules.
 
 **Lessons Learned:**
 - Using standard formats like CSV within a Zip archive ensures long-term data sovereignty and spreadsheet compatibility.

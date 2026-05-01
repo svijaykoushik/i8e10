@@ -33,5 +33,5 @@ i8e10 is designed to feel like a native app.
 - **Button Press**: All primary buttons use a `btn-press` utility that mimics physical button compression.
 
 ## Interlinks | இணைப்புகள்
-- [[User Journey]] - How these interactions map to the user's goals.
-- [[UI Architecture]] - The technical structure behind these components.
+- [User Journey](../flows/user-journey.md) - How these interactions map to the user's goals.
+- [UI Architecture](../modules/ui-architecture.md) - The technical structure behind these components.

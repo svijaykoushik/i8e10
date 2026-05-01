@@ -14,12 +14,12 @@ The header navigation manages global app actions and the primary filtering state
 To preserve negative space and maintain a clean UI, secondary global actions have been consolidated into an overflow menu (triple-dot icon).
 - **Location**: `App.tsx` (Header section).
 - **Items**:
-  - **Reports**: Opens the [[Income Statement]] modal.
+  - **Reports**: Opens the [Income Statement](income-statement.md) modal.
   - **Settings**: Opens the app configuration modal.
 - **Accessibility**: Implements standard ARIA menu roles (`menu`, `menuitem`).
 
 ## Time-Period Filtering | கால-அளவீடு வடிகட்டுதல்
-The application supports standardized time-period filtering across all primary views ([[Double-Entry Ledger]], Debts, and Investments).
+The application supports standardized time-period filtering across all primary views ([Double-Entry Ledger](../concepts/double-entry-ledger.md), Debts, and Investments).
 
 ### Standard Periods | நிலையான காலங்கள்
 - **TODAY**: Current calendar day.
@@ -34,5 +34,5 @@ The application supports standardized time-period filtering across all primary v
 Filtering logic is centralized in `App.tsx` and propagated to list components. This ensures that when a user switches between "Transactions" and "Debts", the selected period (if applicable) remains consistent or resets according to view-specific rules.
 
 ## Interlinks | இணைப்புகள்
-- [[Income Statement]] - Triggered via the overflow menu.
-- [[UI Architecture]] - Global view management logic.
+- [Income Statement](income-statement.md) - Triggered via the overflow menu.
+- [UI Architecture](../modules/ui-architecture.md) - Global view management logic.
