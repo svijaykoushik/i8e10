@@ -93,6 +93,8 @@ export enum FilterPeriod {
   TODAY = 'today',
   THIS_MONTH = 'this_month',
   LAST_MONTH = 'last_month',
+  LAST_3_MONTHS = 'last_3_months',
+  YTD = 'ytd',
   CUSTOM = 'custom',
 }
 

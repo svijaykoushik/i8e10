@@ -81,6 +81,8 @@ const DebtFilterModal: FC<DebtFilterModalProps> = ({ isOpen, onClose, onApply, o
               <option value={FilterPeriod.TODAY}>Today / இன்று</option>
               <option value={FilterPeriod.THIS_MONTH}>This Month / இந்த மாதம்</option>
               <option value={FilterPeriod.LAST_MONTH}>Last Month / கடந்த மாதம்</option>
+              <option value={FilterPeriod.LAST_3_MONTHS}>Last 3 Months / கடந்த 3 மாதங்கள்</option>
+              <option value={FilterPeriod.YTD}>Year to Date / இந்த ஆண்டு முழுவதும்</option>
               <option value={FilterPeriod.CUSTOM}>Custom Range / குறிப்பிட்ட தேதி</option>
             </select>
         </div>

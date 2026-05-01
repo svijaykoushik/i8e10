@@ -110,6 +110,12 @@ const CashFlowFilterModal: FC<CashFlowFilterModalProps> = ({
             <option value={FilterPeriod.LAST_MONTH}>
               Last Month / கடந்த மாதம்
             </option>
+            <option value={FilterPeriod.LAST_3_MONTHS}>
+              Last 3 Months / கடந்த 3 மாதங்கள்
+            </option>
+            <option value={FilterPeriod.YTD}>
+              Year to Date / இந்த ஆண்டு முழுவதும்
+            </option>
             <option value={FilterPeriod.CUSTOM}>
               Custom Range / குறிப்பிட்ட தேதி
             </option>

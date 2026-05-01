@@ -33,6 +33,8 @@ const getPeriodLabel = (period: FilterPeriod): string => {
         case FilterPeriod.TODAY: return 'Today';
         case FilterPeriod.THIS_MONTH: return 'This Month';
         case FilterPeriod.LAST_MONTH: return 'Last Month';
+        case FilterPeriod.LAST_3_MONTHS: return 'Last 3 Months';
+        case FilterPeriod.YTD: return 'Year to Date';
         case FilterPeriod.CUSTOM: return 'Custom Range';
         default: return '';
     }

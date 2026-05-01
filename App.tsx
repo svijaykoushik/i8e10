@@ -22,6 +22,7 @@ import FilterModal from './components/FilterModal';
 import FinancialHealth from './components/FinancialHealth';
 import ForgiveDebtModal from './components/ForgiveDebtModal';
 import ImportSummaryModal from './components/ImportSummaryModal';
+import ReportModal from './components/ReportModal';
 import InvestmentFilterControls from './components/InvestmentFilterControls';
 import InvestmentFilterModal from './components/InvestmentFilterModal';
 import InvestmentFormModal from './components/InvestmentFormModal';
@@ -347,6 +348,8 @@ const App: FC = () => {
   const [isUpdateValueModalOpen, setIsUpdateValueModalOpen] = useState(false);
   const [isSellInvestmentModalOpen, setIsSellInvestmentModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isReconcileModalOpen, setIsReconcileModalOpen] = useState(false);
   const [isDebtInstallmentModalOpen, setIsDebtInstallmentModalOpen] = useState(false);
   const [debtForInstallment, setDebtForInstallment] = useState<Debt | null>(null);
@@ -1441,6 +1444,16 @@ const App: FC = () => {
         periodEndDate.setHours(23, 59, 59, 999);
         break;
       }
+      case FilterPeriod.LAST_3_MONTHS: {
+        periodStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+        periodEndDate = new Date(today);
+        break;
+      }
+      case FilterPeriod.YTD: {
+        periodStartDate = new Date(today.getFullYear(), 0, 1);
+        periodEndDate = new Date(today);
+        break;
+      }
       case FilterPeriod.CUSTOM: {
         periodStartDate = new Date(filter.startDate + 'T00:00:00');
         periodEndDate = new Date(filter.endDate + 'T23:59:59');
@@ -1524,6 +1537,14 @@ const App: FC = () => {
         end = new Date(today.getFullYear(), today.getMonth(), 0);
         end.setHours(23, 59, 59, 999);
         break;
+      case FilterPeriod.LAST_3_MONTHS:
+        start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+        end = new Date(today);
+        break;
+      case FilterPeriod.YTD:
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today);
+        break;
       case FilterPeriod.CUSTOM:
         start = new Date(cashFlowFilter.startDate + 'T00:00:00');
         end = new Date(cashFlowFilter.endDate + 'T23:59:59');
@@ -1606,6 +1627,14 @@ const App: FC = () => {
             periodEndDate = new Date(today.getFullYear(), today.getMonth(), 0);
             periodEndDate.setHours(23, 59, 59, 999);
             break;
+        case FilterPeriod.LAST_3_MONTHS:
+            periodStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+            periodEndDate = new Date(today);
+            break;
+        case FilterPeriod.YTD:
+            periodStartDate = new Date(today.getFullYear(), 0, 1);
+            periodEndDate = new Date(today);
+            break;
         case FilterPeriod.CUSTOM:
             periodStartDate = new Date(debtFilter.startDate + 'T00:00:00');
             periodEndDate = new Date(debtFilter.endDate + 'T23:59:59');
@@ -1669,6 +1698,14 @@ const App: FC = () => {
             periodStartDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             periodEndDate = new Date(today.getFullYear(), today.getMonth(), 0);
             periodEndDate.setHours(23, 59, 59, 999);
+            break;
+        case FilterPeriod.LAST_3_MONTHS:
+            periodStartDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+            periodEndDate = new Date(today);
+            break;
+        case FilterPeriod.YTD:
+            periodStartDate = new Date(today.getFullYear(), 0, 1);
+            periodEndDate = new Date(today);
             break;
         case FilterPeriod.CUSTOM:
             periodStartDate = new Date(investmentFilter.startDate + 'T00:00:00');
@@ -2057,17 +2094,43 @@ const App: FC = () => {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">i8·e10</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">வரவு செலவு கணக்கு & செல்வ மேலாண்மை | Personal Finance Ledger & Wealth Manager</p>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center relative">
             <button
-              onClick={() => setIsSettingsModalOpen(true)}
+              onClick={() => setIsHeaderMenuOpen(!isHeaderMenuOpen)}
               className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-white dark:focus:ring-offset-slate-900 transition-colors duration-200"
-              aria-label="Open settings"
+              aria-label="Open menu"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.573-1.066z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
               </svg>
             </button>
+            {isHeaderMenuOpen && (
+              <div className="absolute right-0 top-12 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-slate-800 ring-1 ring-black ring-opacity-5 z-50 overflow-hidden border border-slate-200 dark:border-slate-700">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  <button
+                    onClick={() => { setIsHeaderMenuOpen(false); setIsReportModalOpen(true); }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    role="menuitem"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Reports
+                  </button>
+                  <button
+                    onClick={() => { setIsHeaderMenuOpen(false); setIsSettingsModalOpen(true); }}
+                    className="flex items-center w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors"
+                    role="menuitem"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.096 2.573-1.066z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -2376,6 +2439,14 @@ const App: FC = () => {
           onClose={() => setAlertModal({ isOpen: false, title: '', message: '' })}
           title={alertModal.title}
           message={alertModal.message}
+        />
+      )}
+
+      {isReportModalOpen && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          transactions={transactions || []}
         />
       )}
 

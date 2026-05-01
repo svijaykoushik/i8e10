@@ -247,6 +247,8 @@ const FinancialHealth: FC<FinancialHealthProps> = ({
         case FilterPeriod.TODAY: return { ta: "இன்று", en: 'Today' };
         case FilterPeriod.THIS_MONTH: return { ta: "இந்த மாதம்", en: 'This Month' };
         case FilterPeriod.LAST_MONTH: return { ta: 'கடந்த மாதம்', en: 'Last Month' };
+        case FilterPeriod.LAST_3_MONTHS: return { ta: 'கடந்த 3 மாதங்கள்', en: 'Last 3 Months' };
+        case FilterPeriod.YTD: return { ta: 'இந்த ஆண்டு முழுவதும்', en: 'YTD' };
         case FilterPeriod.CUSTOM: return { ta: 'குறிப்பிட்ட தேதியில்', en: 'in Range' };
         case FilterPeriod.ALL: return { ta: 'மொத்தம்', en: 'Overall' };
         default: return { ta: 'காலம்', en: 'Period' };
