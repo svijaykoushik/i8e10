@@ -23,6 +23,7 @@ export function calculateIncomeStatementTotals(transactions: Transaction[]) {
 export async function generateIncomeStatementPDF(transactions: Transaction[], startDate: Date, endDate: Date) {
     // Dynamic import to avoid SSR issues if this app ever goes SSR, and to reduce initial bundle size
     const { default: jsPDF } = await import('jspdf');
+    const { default: autoTable } = await import('jspdf-autotable');
 
     const { totalIncome, totalExpense, netFlow } = calculateIncomeStatementTotals(transactions);
 
@@ -46,20 +47,23 @@ export async function generateIncomeStatementPDF(transactions: Transaction[], st
         console.warn("Could not load logo for PDF", e);
     }
 
-    // Title
+    // --- 1. Document Header ---
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
-    doc.setTextColor(33, 33, 33);
-    doc.text('i8·e10 Income Statement', 14, 25);
+    doc.setTextColor(40, 40, 40);
+    doc.text("i8·e10", 14, 25); 
+
+    doc.setFontSize(14);
+    doc.text("INCOME STATEMENT", 14, 35);
     
-    // Statement Date Label (Indian format)
     const formatDate = (d: Date) => d.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     
-    doc.setFontSize(12);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Period: ${formatDate(startDate)} to ${formatDate(endDate)}`, 14, 35);
-    doc.text(`Statement Date: ${formatDate(new Date())}`, 14, 42);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 100, 100); // Muted gray for the date
+    doc.text(`For the period: ${formatDate(startDate)} - ${formatDate(endDate)}`, 14, 42);
 
-    // Totals
+    // Totals formatter
     const formatCurrency = (amount: number) => {
         const formatted = new Intl.NumberFormat('en-IN', {
             minimumFractionDigits: 2,
@@ -69,72 +73,73 @@ export async function generateIncomeStatementPDF(transactions: Transaction[], st
         return `Rs ${sign}${formatted}`;
     };
 
-    let startY = 70;
+    // --- 2. Data Table ---
+    autoTable(doc, {
+        startY: 55,
+        theme: 'plain', // Removes default heavy gridlines for a clean look
+        styles: {
+            font: 'helvetica',
+            fontSize: 10,
+            cellPadding: 6,
+            textColor: [40, 40, 40],
+        },
+        columnStyles: {
+            0: { halign: 'left' },  // Descriptions
+            1: { halign: 'right' }  // Amounts
+        },
+        body: [
+            [{ content: 'Total Income', styles: { fontStyle: 'bold', textColor: [0, 0, 0] } }, { content: formatCurrency(totalIncome), styles: { fontStyle: 'bold' } }],
+            [{ content: `(${numberToWords(totalIncome)})`, styles: { fontStyle: 'italic', fontSize: 9, textColor: [100, 100, 100] } }, ''],
+            
+            ['', ''], // Spacer row
 
-    // TOTAL INCOME Box
-    doc.setFillColor(220, 240, 220); // Light Green
-    doc.rect(14, startY, 182, 12, 'F');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL INCOME:', 16, startY + 8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formatCurrency(totalIncome), 194, startY + 8, { align: 'right' });
-    
-    // Amount in words
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`(${numberToWords(totalIncome)})`, 194, startY + 16, { align: 'right' });
+            [{ content: 'Total Expenses', styles: { fontStyle: 'bold', textColor: [0, 0, 0] } }, { content: formatCurrency(totalExpense), styles: { fontStyle: 'bold' } }],
+            [{ content: `(${numberToWords(totalExpense)})`, styles: { fontStyle: 'italic', fontSize: 9, textColor: [100, 100, 100] } }, ''],
 
-    startY += 35; // Generous negative space
+            ['', ''], // Spacer row
 
-    // TOTAL EXPENSES Box
-    doc.setFillColor(245, 230, 215); // Light Orange/Red
-    doc.rect(14, startY, 182, 12, 'F');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL EXPENSES:', 16, startY + 8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(formatCurrency(totalExpense), 194, startY + 8, { align: 'right' });
-    
-    // Amount in words
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`(${numberToWords(totalExpense)})`, 194, startY + 16, { align: 'right' });
-
-    startY += 40; // More negative space before Net Flow
-
-    // NET FLOW Box
-    doc.setFillColor(245, 240, 225); // Light Yellow/Tan
-    doc.setDrawColor(0, 0, 0); // Black border
-    doc.setLineWidth(0.5);
-    doc.rect(14, startY, 182, 14, 'FD'); // Filled and outlined
-    
-    doc.setFontSize(14);
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.text(`NET ${netFlow >= 0 ? 'SURPLUS' : 'DEFICIT'}:`, 16, startY + 9);
-    
-    // Net Flow Value
-    doc.setTextColor(netFlow >= 0 ? 0 : 200, netFlow >= 0 ? 120 : 0, 0); // Green if positive, Red if negative
-    doc.text(formatCurrency(netFlow), 194, startY + 9, { align: 'right' });
-
-    // Amount in words for Net Flow
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`(${numberToWords(netFlow)})`, 194, startY + 18, { align: 'right' });
+            [{ content: `NET ${netFlow >= 0 ? 'SURPLUS' : 'DEFICIT'}`, styles: { fontStyle: 'bold', fontSize: 12, textColor: [0, 0, 0] } }, 
+             { content: formatCurrency(netFlow), styles: { fontStyle: 'bold', fontSize: 12, textColor: [0, 0, 0] } }],
+            [{ content: `(${numberToWords(netFlow)})`, styles: { fontStyle: 'italic', fontSize: 9, textColor: [100, 100, 100] } }, ''],
+        ],
+        
+        // --- 3. Custom Drawing for Accounting Lines ---
+        didDrawCell: (data) => {
+            const rowFirstCell = data.row.raw[0];
+            const content = typeof rowFirstCell === 'object' && rowFirstCell !== null ? (rowFirstCell as any).content : rowFirstCell;
+            
+            // Draw a line above Totals
+            if (content === 'Total Income' || content === 'Total Expenses') {
+                doc.setDrawColor(200, 200, 200);
+                doc.setLineWidth(0.5);
+                doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y);
+            }
+            
+            // Draw a double line under Net Income
+            if (typeof content === 'string' && content.startsWith('NET ')) {
+                doc.setDrawColor(0, 0, 0);
+                doc.setLineWidth(0.5);
+                // Top line
+                doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y);
+                // Bottom double line
+                doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height);
+                doc.line(data.cell.x, data.cell.y + data.cell.height + 1, data.cell.x + data.cell.width, data.cell.y + data.cell.height + 1);
+            }
+        }
+    });
 
     // Footer
+    // We get the final Y position from autotable
+    const finalY = (doc as any).lastAutoTable.finalY || 150;
+    
     doc.setDrawColor(200, 200, 200);
-    doc.line(14, startY + 25, 196, startY + 25);
+    doc.line(14, finalY + 25, 196, finalY + 25);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Last Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, startY + 30);
+    doc.text(`Statement Date: ${formatDate(new Date())}`, 14, finalY + 30);
     doc.setFontSize(8);
-    doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')} at ${new Date().toLocaleTimeString('en-IN')}`, 14, 280);
+    doc.text(`Generated on: ${formatDate(new Date())} at ${new Date().toLocaleTimeString('en-IN')}`, 14, 280);
 
     doc.save(`i8e10-Income-Statement-${new Date().toISOString().split('T')[0]}.pdf`);
 }
