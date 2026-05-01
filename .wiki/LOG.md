@@ -22,5 +22,66 @@ This file records every "Ingest" session, detailing the files read and changes m
 - Deterministic IDs are essential for idempotent migrations.
 - Equity-based reconciliation (Forgiving Reconciliation) balances user friction with accounting rigor.
 
+## [2026-05-01] - Income Statement & Navigation Update | வருமான அறிக்கை மற்றும் வழிசெலுத்தல் புதுப்பிப்பு
+
+**Files Ingested:**
+- `utils/pdfGenerator.ts`, `components/ReportModal.tsx`, `utils/numberToWords.ts`
+- `App.tsx`, `components/SettingsModal.tsx`
+- `tests/reports.e2e.test.ts`
+
+**Changes Made:**
+- Updated [[INDEX.md]] with required frontmatter and current `HEAD` SHA.
+- Created [[Income Statement]] feature page documenting the professional PDF generation pipeline.
+- Created [[Header Navigation]] feature page documenting the new overflow menu and standardized time-period filters.
+- Linked new features to existing [[Double-Entry Ledger]] and [[UI Architecture]] pages.
+
+**Lessons Learned:**
+- Client-side PDF generation provides a private, offline-first way to handle financial documentation.
+- Standardizing period-based filtering across views improves UX consistency.
+- Indian numbering system (Words) is a critical requirement for local professional financial statements.
+
 **Session Summary:**
-Completed the first full "Ingest" session. Established the foundational knowledge base for the double-entry accounting system, including technical modules and high-level concepts.
+Successfully ingested the new reporting system and UI navigation changes. The wiki now reflects the transition from simple list views to a more professional financial management tool with document generation capabilities.
+
+## [2026-05-01] - Security & Core Features Ingest | பாதுகாப்பு மற்றும் முதன்மை அம்சங்கள் உள்ளீடு
+
+**Files Ingested:**
+- `utils/cryptoService.ts`, `utils/crypto.worker.ts`, `utils/db.ts`
+- `utils/bulkAddParser.ts`, `components/BulkAddModal.tsx`
+- `App.tsx`, `components/OnboardingGuide.tsx`
+
+**Changes Made:**
+- Created [[Auth & Encryption]] flow page documenting the zero-knowledge architecture and Master Key hierarchy.
+- Created [[Recovery Flow]] page documenting the 12-word phrase mechanism and sequence.
+- Created [[Bulk Add]] feature page documenting the multi-pass natural language parser.
+- Created [[Data Management]] feature page documenting the secure data erasure process.
+- Created [[User Journey]] flow page visualizing the lifecycle from onboarding to recovery.
+- Updated [[INDEX.md]] with the new knowledge categories (Features, Flows).
+
+**Lessons Learned:**
+- Web Workers are essential for maintaining 60fps while performing heavy crypto derivations like PBKDF2.
+- Dual-wrapping the Master Key (Password + Recovery Phrase) provides a robust fallback without compromising zero-knowledge principles.
+- Natural language parsing is most reliable when using a multi-pass approach that isolates deterministic tokens (Date, Amount) before inferring description.
+
+## [2026-05-01] - Interaction, Portability & Specialized Modules | தொடர்பு, பெயர்வுத்திறன் மற்றும் சிறப்புத் தொகுதிகள்
+
+**Files Ingested:**
+- `components/BackupReminderBanner.tsx`, `utils/zipExporter.ts`, `utils/csvExporter.ts`
+- `components/AddTransactionButton.tsx`, `hooks/useScrollDirection.ts`
+- `utils/debtManager.ts`, `utils/investmentManager.ts`
+- `utils/db.ts`, `src/db/database.ts`
+
+**Changes Made:**
+- Created [[Backup System]] feature page documenting the reminder logic and Zip-based CSV bundling.
+- Created [[Interaction Model]] feature page documenting the FAB's dual-action (tap/long-press) behavior and PWA offline capabilities.
+- Created [[Data Persistence]] concept page documenting the IndexedDB middleware, schema evolution (V3), and portability.
+- Created [[Debt Management]] and [[Investment Tracking]] module pages documenting their specific ledger integrations and lifecycles.
+- Finalized [[INDEX.md]] with complete coverage of concepts, features, flows, and modules.
+
+**Lessons Learned:**
+- Using standard formats like CSV within a Zip archive ensures long-term data sovereignty and spreadsheet compatibility.
+- Long-press gestures on mobile can effectively double the functionality of a single primary button (FAB) without cluttering the UI.
+- Local-first persistence requires a clear strategy for schema migrations to preserve data integrity across version updates.
+
+**Session Summary:**
+Completed the final major "Ingest" session. The wiki now provides 100% coverage of the i8e10 application's architectural principles, core features, specialized modules, and user interaction patterns. The knowledge base is now fully compiled and synchronized with the source code at `HEAD`.
