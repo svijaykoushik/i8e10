@@ -28,3 +28,5 @@ playwright/.auth/
 .continue/
 # AI Vendor Directories
 .claude/
+
+.worktrees
