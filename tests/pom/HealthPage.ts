@@ -36,7 +36,8 @@ export class HealthPage extends BasePage {
   }
 
   async openSettings() {
-    await this.page.getByLabel('Open settings').click();
+    await this.page.getByLabel('Open menu').click();
+    await this.page.getByRole('menuitem', { name: /Settings/i }).click();
     // Wait for the Settings modal title
     await expect(this.page.getByText(/Settings \/ அமைப்புகள்/i)).toBeVisible({ timeout: 10000 });
   }

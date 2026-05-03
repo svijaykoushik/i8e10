@@ -34,5 +34,5 @@ When you buy coffee for $5 using your "Cash" wallet:
 - **Atomic Validation**: Always use `validateBalancedEntries` before saving to prevent corrupt ledger states.
 - **Source IDs**: During migration, keeping a `sourceId` in the meta field is essential for verifying data parity between the old and new systems.
 
-[[Core Database]] | [[Core Database]]
-[[Forgiving Reconciliation]] | [[Forgiving Reconciliation]]
+[Core Database](../modules/core-database.md) | [Core Database](../modules/core-database.md)
+[Forgiving Reconciliation](forgiving-reconciliation.md) | [Forgiving Reconciliation](forgiving-reconciliation.md)

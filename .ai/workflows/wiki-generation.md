@@ -48,7 +48,7 @@ updated_at: "YYYY-MM-DD"
 
 ### General Rules
 - **Bilingual Requirement:** Every page in `.wiki/` must use dual-language headings (English and Tamil தமிழ்).
-- **Interlinking:** Every new page must have at least two `[[wikilinks]]` to existing pages to ensure a "dense" knowledge graph.
+- **Interlinking:** Every new page must have at least two `[Page Name](../folder/file.md)` to existing pages to ensure a "dense" knowledge graph.
 - **Stale Status:** Mark pages as `status: "stale"` when the source file has changed significantly since the page was last updated, or when the source no longer exists.
 - **Page Naming:** Use lowercase, hyphenated filenames. Mirror source paths for feature pages (e.g., `src/api/routes.ts` → `.wiki/features/src-api-routes.md`).
 
@@ -82,11 +82,13 @@ Trigger on: "Ingest", "Refresh Wiki", "Update Wiki", "Compile".
 ## 4. Command: "Lint Wiki"
 Trigger on: "Lint Wiki", "Check Wiki".
 - **Contradictions:** Identify conflicting claims between pages.
-- **Orphans:** Find pages with no inbound `[[links]]`.
-- **Broken Links:** Flag `[[wikilinks]]` where the target page doesn't exist.
+- **Orphans:** Find pages with no inbound `[Page Name](../folder/file.md)`.
+- **Broken Links:** Flag `[Page Name](../folder/file.md)` where the target page doesn't exist.
 - **Stale Pages:** Highlight pages marked `stale` that need manual review.
 - **Missing Coverage:** Identify major changed modules since `last_commit` with no corresponding wiki page.
 - **Implementation Drift:** Verify that the logic described matches the actual implementation in `src/`.
+- **Link Validation:** Flag any [[bracket_style_links]] and suggest conversion to [Standard Markdown](relative/path.md).
+- **Relative Paths:** Ensure all links use relative paths rather than absolute paths to ensure the wiki remains portable across different local environments.
 
 ## 5. Style & Writing Guidance
 - **Low-Friction Focus:** Prioritize documenting the "log first, clean later" workflow and the core Reconciliation feature.

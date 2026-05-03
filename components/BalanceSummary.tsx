@@ -64,6 +64,8 @@ const getTitleForPeriod = (period: FilterPeriod) => {
       case FilterPeriod.TODAY: return { main: "Today's Net Flow / இன்றைய நிகர ஓட்டம்", sub: 'Today' };
       case FilterPeriod.THIS_MONTH: return { main: "This Month's Net Flow / மாத நிகர ஓட்டம்", sub: 'This Month' };
       case FilterPeriod.LAST_MONTH: return { main: 'Last Month Net Flow / கடந்த மாத நிகர ஓட்டம்', sub: 'Last Month' };
+      case FilterPeriod.LAST_3_MONTHS: return { main: 'Last 3 Months Net Flow / கடந்த 3 மாத நிகர ஓட்டம்', sub: 'Last 3 Months' };
+      case FilterPeriod.YTD: return { main: 'YTD Net Flow / இந்த ஆண்டின் நிகர ஓட்டம்', sub: 'YTD' };
       case FilterPeriod.CUSTOM: return { main: 'Net Flow in Range / குறிப்பிட்ட தேதியில்', sub: 'in Range' };
       case FilterPeriod.ALL: return { main: 'Overall Net Flow / ஒட்டுமொத்த நிகர ஓட்டம்', sub: 'All Time' };
       default: return { main: 'Periodic Net Flow', sub: 'Period' };

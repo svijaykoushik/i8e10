@@ -42,5 +42,5 @@ graph TD
 - **Idempotency**: The migration pipeline must be safe to run multiple times (idempotent) in case of interruptions.
 - **Traceability**: Storing the `sourceId` of the legacy transaction in the `meta` field of the new double-entry transaction is vital for debugging migration errors.
 
-[[Double-Entry Ledger]] | [[Double-Entry Ledger]]
-[[Core Database]] | [[Core Database]]
+[Double-Entry Ledger](../concepts/double-entry-ledger.md) | [Double-Entry Ledger](../concepts/double-entry-ledger.md)
+[Core Database](core-database.md) | [Core Database](core-database.md)

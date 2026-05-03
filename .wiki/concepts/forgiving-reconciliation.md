@@ -37,5 +37,5 @@ export async function recordAdjustment(params: { ... }) {
 - **Audit Trail**: Even though it's a "correction," keeping it as a transaction ensures the ledger remains balanced and provides an audit trail of adjustments.
 - **Equity Usage**: Using an Equity account (Opening Balance) for adjustments is cleaner than using a generic "Expense" or "Income" category, as it reflects a change in the starting state or unknown variance.
 
-[[Double-Entry Ledger]] | [[Double-Entry Ledger]]
-[[Accounting System]] | [[Accounting System]]
+[Double-Entry Ledger](double-entry-ledger.md) | [Double-Entry Ledger](double-entry-ledger.md)
+[Accounting System](../modules/accounting-system.md) | [Accounting System](../modules/accounting-system.md)
