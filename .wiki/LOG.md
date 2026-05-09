@@ -2,7 +2,38 @@
 
 This file records every "Ingest" session, detailing the files read and changes made to the wiki.
 
-## [2026-04-23] - Initialization & Core Ingest | தொடக்கம் மற்றும் முதன்மை தரவு உள்ளீடு
+## [2026-06-01] - Route-Based Refactor, Performance Optimization & PWA Shortcuts | மைக்ரோ-வழிகாட்ட மறுமாதिरि, செயல்திறன் மேம்பாடு மற்றும் PWA குறுதுளிகள்
+
+**Files Ingested:**
+- `.worktrees/plan-refactor-views-to-pages/hooks/useTransactions.ts`, `useDebts.ts`, `useInvestments.ts`
+- `pages/TransactionsPage.tsx`, `pages/DebtsPage.tsx`, `pages/InvestmentsPage.tsx`
+- `components/Layout.tsx`, `components/SkeletonLoader.tsx`
+- `vite.config.ts` (PWA manifest with shortcuts)
+- `.ai/context/architecture.md`, `.ai/context/system_profile.md`
+
+**Changes Made:**
+- Updated [UI Architecture](modules/ui-architecture.md) to document react-router-dom routing, page-based components, and Framer Motion animations
+- Updated `.ai/context/architecture.md` with new routing system, page components, and data fetching optimization strategy
+- Updated `.ai/context/system_profile.md` to reflect current tech stack (react-router, Framer Motion) and directory structure
+- Optimized `useFilteredTransactions` hook to support filter-aware DB queries while keeping totals separate
+- Added PWA manifest shortcuts for "Add Transaction", "Manage Debts", and "Investments" with corresponding routes
+- Verified build (✓), type-check (✓), and all 101 unit tests (✓)
+
+**Performance Improvements:**
+- Separated display data fetching from totals calculation to reduce in-memory filtering overhead
+- Filter-aware hooks now enable selective data loads at database level
+- Skeleton loaders provide smooth UX during route transitions and data loads
+
+**Lessons Learned:**
+- Route-based page architecture improves code organization and maintainability
+- Framer Motion route animations enhance perceived performance even during data loads
+- PWA shortcuts provide quick access to key user actions without requiring app redesign
+- Separating filtered UI data from totals calculations is crucial for performance as dataset size grows
+
+**Session Summary:**
+Completed the route-based refactor continuation with performance optimization and PWA enhancements. All systems verified stable (build, tests, type-check). Documentation updated to reflect the new modular architecture with react-router navigation, optimized data fetching, and PWA shortcuts. Next priorities: investigate any remaining performance regressions and consider advanced caching strategies for very large datasets.
+
+## [2026-05-01] - Initialization & Core Ingest | தொடக்கம் மற்றும் முதன்மை தரவு உள்ளீடு
 
 **Files Ingested:**
 - `.ai/index.md`, `.ai/system_profile.md`, `.ai/architecture.md`

@@ -16,12 +16,16 @@ i8e10 is a secure, private, offline-first personal finance tracker built as a Pr
 -   **State Management**: React Context (Theme, etc.) + Local State
 -   **Database**: Custom IndexedDB Wrapper (Dexie-like API)
 -   **Cryptography**: Web Crypto API (native)
--   **PWA**: vite-plugin-pwa
--   **Routing**: None (Single Page Application with conditional rendering based on `activeView`)
+-   **PWA**: vite-plugin-pwa (with manifest shortcuts for key actions)
+-   **Routing**: react-router-dom with Framer Motion route transitions
+-   **Animations**: Framer Motion for layout transitions and route animations
 
 ## Key Directories
--   `src/components`: React components (UI and feature-specific)
--   `src/contexts`: React Context definitions
--   `src/db`: Database schema and configuration.
--   `utils/`: Core utilities (custom db wrapper, crypto service, importers/exporters).
--   `types.ts`: Core type definitions.
+-   `components/`: React components (UI, modals, filters, layout)
+-   `pages/`: Route-based page components (Transactions, Debts, Investments, Health)
+-   `hooks/`: Custom React hooks (useTransactions, useDebts, useInvestments, useSettings, useTheme, etc.)
+-   `contexts/`: React Context definitions (ThemeContext)
+-   `src/db/`: Database schema and configuration
+-   `src/components/auth/`: Authentication components
+-   `utils/`: Core utilities (db wrapper, accounting adapter, crypto service, importers/exporters, transaction presenter)
+-   `types.ts`: Core type definitions
