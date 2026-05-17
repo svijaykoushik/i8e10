@@ -1,8 +1,17 @@
-# i8·e10 — Personal Finance Ledger & Wealth Manager
+# i8·e10 — The Finance Tracker for People Who Quit Tracking
 
-**A secure, private, and powerful personal finance tracker designed to work offline—your financial data is encrypted and stored locally on your device.**
+**A secure, private, offline-first finance tracker built for real life — especially the days when tracking falls apart.**
 
-i8·e10 is designed for clarity and ease of use, helping you manage your finances without the need for an account or a constant internet connection. Its bilingual English/Tamil interface makes it accessible to a wider audience.
+Most finance apps assume perfect discipline.
+i8·e10 assumes you're human.
+
+You forget.
+You get busy.
+You stop tracking for days, weeks, sometimes months.
+
+And instead of making you feel guilty for “breaking the streak,” i8·e10 helps you recover in seconds.
+
+Just reconcile your balance, continue from reality, and move on.
 
 ![image](hero.png)
 
@@ -20,12 +29,24 @@ The name i8·e10 is a contraction of Income 8 and Expense 10. It is a modern nod
 
 *(Income is 8 annas, Expense is 10 annas; The extra 2 annas lead to a deficit in the end.)*
 
-The app serves as a tool to help you track that very balance and ensure your "expense" never overtakes your "income"
+The **i** stands for **Income**.
+The **e** stands for **Expense**.
+
+A small reminder that life works best when income stays ahead of expenses.
+
+But more importantly, i8·e10 is built around a different philosophy:
+
+> You do not fail because you stopped tracking.
+> You fail only when you stop coming back.
 
 ---
 
 ## ✨ Key Features
 
+-   **⚖️ 1 Tap Balance Reconciliation:** Quickly adjust your wallet balance to match your actual cash or bank account total with a single tap.
+-   **⚡️ Smart & Fast Entry:**
+    -   **Quick Add Button:** A quick tap adds the most common item (like an expense). A long-press reveals options to add transactions, debts, or investments.
+    -   **Bulk Add:** Paste multiple transactions in plain text and let the app parse them for you in seconds.
 -   **🔒 Encrypted & Private:** Your financial data is yours alone. All information is encrypted and stored locally in your browser using the Web Crypto API. Your password is the only key, and it never leaves your device. No accounts. No cloud storage. No access to your financial data—ever.
 -   **🔑 Secure Password & Recovery:** The app is protected by a password you set. If you forget it, a unique 12-word recovery phrase—generated during setup—is the only way to regain access to your data.
 -   **📊 Comprehensive Tracking:** Go beyond simple expense tracking.
@@ -33,10 +54,6 @@ The app serves as a tool to help you track that very balance and ensure your "ex
     -   **Debts:** Keep a clear record of money you've lent and money you owe, with settlement tracking.
     -   **Investments:** Monitor the performance of your assets like stocks, mutual funds, and real estate, including contributions, withdrawals, and dividends.
 -   **🌐 Bilingual Interface:** A clean, intuitive interface available in both English and Tamil (தமிழ்).
--   **⚡️ Smart & Fast Entry:**
-    -   **Quick Add Button:** A quick tap adds the most common item (like an expense). A long-press reveals options to add transactions, debts, or investments.
-    -   **Bulk Add:** Paste multiple transactions in plain text and let the app parse them for you in seconds.
--   **⚖️ Easy Balance Reconciliation:** Quickly adjust your wallet balance to match your actual cash or bank account total with a simple, guided tool.
 -   **🔍 Powerful Filtering:** Instantly filter your transactions, debts, and investments by various criteria like time periods, wallets, types, and status.
 -   **💾 Secure Data Backup & Restore:** Export all your financial data—transactions, debts, and investments—into separate CSV files, conveniently packaged in a single ZIP file. This serves as a secure, unencrypted backup for your records or for use in other applications.
 -   **🔔 Smart Reminders:** Get automatic reminders to back up your data, ensuring you don't lose your financial history.
