@@ -35,8 +35,16 @@ A custom middleware in `utils/db.ts` intercepts `add`, `put`, and `get` operatio
 -   **Local State**: `useState` is used for form handling and UI toggles.
 
 ## Routing
-The app uses a custom "view" based routing system (state `activeView` in `App.tsx`) instead of a library like `react-router`.
--   **Views**: `transactions`, `debts`, `investments`, `health` (Financial Health).
+The app uses **react-router-dom** for route-based page navigation with animated transitions.
+-   **Layout Component**: `components/Layout.tsx` provides header, tab navigation, and `AnimatePresence` wrapper for route transitions using Framer Motion.
+-   **Page Components**: Located in `pages/` directory:
+    -   `TransactionsPage.tsx`: Transaction management view
+    -   `DebtsPage.tsx`: Debt tracking view
+    -   `InvestmentsPage.tsx`: Investment management view
+    -   `HealthPage.tsx`: Financial health dashboard
+-   **Route Configuration**: Defined in `App.tsx` using React Router `<Routes>` and `<Route>` elements
+-   **Animations**: Framer Motion `motion.div` with `layoutId` props enable smooth page transitions
+-   **Skeleton Loaders**: Custom `SkeletonLoader.tsx` component shows view-specific loading states during data fetch
 
 ## Reporting & Document Generation
 The application supports client-side PDF generation for financial reports.
@@ -45,3 +53,13 @@ The application supports client-side PDF generation for financial reports.
 -   **Utilities**: `utils/numberToWords.ts` provides Indian numbering system word conversion for financial amounts.
 -   **Implementation**: Reports are generated entirely in the browser using the current decrypted state of the database.
 -   **Standards**: Follows Indian financial formatting (en-IN locale, Rs symbol, DD/MM/YYYY dates).
+
+## Data Fetching & Optimization
+-   **All-Data Hooks**: Core hooks (`useTransactions`, `useDebts`, `useInvestments`) maintain subscriptions to all data for totals and balance calculations.
+-   **Filtered Hooks**: Optimized hooks (`useFilteredTransactions`, `useFilteredDebts`, `useFilteredInvestments`) support filter-aware DB queries:
+    -   Accept `FilterState` parameter to enable selective data fetch
+    -   Filter by date range, wallet, transaction type, status, etc. at the hook level
+    -   Return filtered and presented UI data separate from totals calculations
+-   **Presentation Layer**: `transactionPresenter.ts` converts double-entry ledger entries to user-friendly transaction objects for UI display
+-   **Live Query Pattern**: All data subscriptions use `liveQuery` for reactive updates whenever IndexedDB data changes
+-   **Performance**: Reduces in-memory filtering overhead by keeping display and totals calculation separate
