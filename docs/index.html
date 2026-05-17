@@ -3,34 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit</title>
+  <title>i8·e10 — The Finance Tracker for People Who Quit Tracking</title>
   <meta name="description"
-    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
+    content="A blazing fast, offline finance app built for the comeback. Recover from gaps without guilt, log in 3 seconds, and finally build a tracking habit that sticks." />
   <meta name="keywords"
     content="offline expense tracker, personal finance manager, private finance management, expense manager excel alternative, money management tamil, வரவு செலவு கணக்கு, secure money tracker" />
   <link rel="icon" type="image/x-icon" href="favicon.ico">
-  <link rel="apple-touch-icon" href="assets/images/logo.png">
+  <link rel="apple-touch-icon" href="assets/images/logo.webp">
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit" />
+  <meta property="og:title" content="i8·e10 — The Finance Tracker for People Who Quit Tracking" />
   <meta property="og:description"
-    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
+    content="A blazing fast, offline finance app built for the comeback. Recover from gaps without guilt, log in 3 seconds, and finally build a tracking habit that sticks." />
   <meta property="og:image" content="https://i8e10.vercel.app/og-image.png" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="i8·e10 — The Offline Finance Tracker That Keeps You Out of a Deficit" />
+  <meta name="twitter:title" content="i8·e10 — The Finance Tracker for People Who Quit Tracking" />
   <meta name="twitter:description"
-    content="A blazing fast, offline PWA to log expenses before you forget them. Every transaction stays on your local device — encrypted, private, and entirely yours. No accounts. No cloud." />
+    content="A blazing fast, offline finance app built for the comeback. Recover from gaps without guilt, log in 3 seconds, and finally build a tracking habit that sticks." />
   <meta name="twitter:image" content="https://i8e10.vercel.app/i8e10-og-image.png" />
-  
-  <script src="https://cdn.tailwindcss.com?plugins=container-queries"></script>
-  
-  <script src="https://unpkg.com/lucide@latest"></script>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="image" href="assets/images/hero-recovery.webp" fetchpriority="high">
+
+  <link rel="stylesheet" href="assets/css/styles.css">
+  
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   
@@ -89,14 +91,15 @@
     <div class="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
       <div class="flex items-center gap-3">
         <div class="flex h-8 w-8 items-center justify-center rounded-md text-xs font-bold text-white shadow-lg">
-          <img src="./assets/images/logo.png" alt="Logo" class="h-8 w-8">
+          <img src="./assets/images/logo.webp" alt="Logo" class="h-8 w-8">
         </div>
         <p class="text-base font-semibold tracking-tight">i8·e10</p>
       </div>
       <nav class="hidden items-center gap-6 text-sm text-slate-600 md:flex">
+        <a href="#comeback" class="transition hover:text-slate-900">1-Tap Comeback</a>
         <a href="#why" class="transition hover:text-slate-900">Why</a>
         <a href="#features" class="transition hover:text-slate-900">Features</a>
-        <a href="#how-it-works" class="transition hover:text-slate-900">Bulk Add</a>
+        <a href="#how-it-works" class="transition hover:text-slate-900">3-Second catchup</a>
       </nav>
       <a href="https://i8e10.vercel.app" class="rounded-full px-4 py-2 text-sm font-semibold text-white transition hover:scale-105" style="background-color: #4f39f6;">
         Launch App
@@ -115,11 +118,12 @@
           </p>
           <div class="space-y-4">
             <h1 class="max-w-xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              Income vs. Expense,<br>Finally Clear.
+              The Finance Tracker for<br>People Who Quit Tracking.
             </h1>
             <p class="max-w-lg text-lg leading-relaxed text-slate-600">
-              Most finance apps are either too rigid to use in a hurry, or too loose to keep you honest. I built this for myself — to log a quick cash expense before I forget it, and to stay gently accountable without the guilt.
+              Most finance apps fail when you forget to log. i8·e10 is built for the comeback. Log daily in 3 seconds, or catch up on an entire week with a single click. No guilt, no friction—just a habit that actually sticks.
             </p>
+
           </div>
           <div id="launch" class="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3">
             <a href="https://i8e10.vercel.app" class="inline-flex w-full sm:w-auto justify-center items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-2xl shadow-indigo-300/40 transition hover:scale-105" style="background-color: #4f39f6;">
@@ -134,100 +138,122 @@
         </div>
 
        <div class="relative hero-right-hidden animate-on-scroll">
-        <div class="max-w-4xl mx-auto p-4 bg-white rounded-xl shadow-lg border border-gray-100">
-          <div class="flex flex-col sm:flex-row gap-3 mb-4">
-            <div class="w-full sm:w-1/2 bg-gray-50/50 p-4 rounded-lg border border-gray-100 flex flex-col justify-between">
-              <div>
-                <div class="text-[10px] font-medium text-gray-500 uppercase flex items-baseline gap-1">
-                  <span>NET WORTH</span>
-                  <span class="text-[9px] font-normal opacity-70">/ நிகர மதிப்பு</span>
-                </div>
-                <div class="text-3xl font-black mt-1 text-gray-900 break-words">₹13,950</div>
-              </div>
-              <div class="text-[10px] text-gray-400 mt-2 sm:mt-0">Assets - Liabilities</div>
+          <div class="relative rounded-3xl bg-white p-2 shadow-2xl border border-slate-100 overflow-hidden">
+            <img src="./assets/images/hero-recovery.webp" alt="Sustainable Habit Recovery Illustration" fetchpriority="high" class="w-full h-auto block rounded-2xl">
+          </div>
+       </div>
+      </div>
+    </section>
+
+    <!-- The 1-Tap Comeback Section -->
+    <section id="comeback" class="py-20 border-b border-slate-100">
+      <div class="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-12 text-center reveal-hidden animate-on-scroll">
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-5xl">The 1-Tap Comeback</h2>
+          <p class="mt-4 mx-auto max-w-2xl text-lg text-slate-600">
+            Life happens. Tracking stops. With i8·e10, you're never more than 3 seconds away from a fresh start. Just tap Reconcile, enter what's in your wallet, and keep moving.
+          </p>
+        </div>
+
+        <div class="grid gap-8 md:grid-cols-3">
+          <!-- Step 1 -->
+          <div class="space-y-4 reveal-hidden animate-on-scroll">
+            <div class="relative rounded-2xl border border-slate-200 bg-slate-900 p-2 shadow-xl">
+              <img src="assets/images/reconcile-before.webp" alt="The Drift - Messy Balance" loading="lazy" class="rounded-lg w-full">
             </div>
-            
-            <div class="w-full sm:w-1/2 bg-amber-50 p-3 rounded-lg border border-amber-100 flex gap-2">
-              <div class="flex-shrink-0 size-8 rounded-full bg-white flex items-center justify-center border border-amber-200">
-                <svg class="size-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-              </div>
-              <div class="flex-grow space-y-1">
-                <div class="text-sm font-bold text-amber-700 flex flex-wrap items-baseline gap-1">
-                  <span>Warning</span>
-                  <span class="text-xs font-normal opacity-70">/ எச்சரிக்கை</span>
-                </div>
-                <div class="text-xs text-gray-700 leading-relaxed">
-                  Debt is becoming significant. Control your liabilities.
-                </div>
-                <div class="text-[9px] text-gray-500 flex flex-wrap items-center gap-1">
-                  <span class="font-bold text-gray-600">Ratio:</span> 
-                  <span>47.06% Debt</span>
-                  <span class="text-gray-300">•</span>
-                  <span class="font-bold text-gray-600">Flow:</span> 
-                  <span class="text-gray-900">Positive</span>
-                </div>
+            <div class="px-2 text-center md:text-left">
+              <h3 class="font-bold text-slate-900">1. The Drift</h3>
+              <p class="text-sm text-slate-600">Your app balance doesn't match reality. You feel like quitting.</p>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="space-y-4 reveal-hidden animate-on-scroll" style="transition-delay: 100ms;">
+            <div class="relative rounded-2xl border border-slate-200 bg-slate-900 p-2 shadow-xl">
+              <img src="assets/images/reconcile-modal.webp" alt="The Correction - 1 Tap Sync" loading="lazy" class="rounded-lg w-full">
+            </div>
+            <div class="px-2 text-center md:text-left">
+              <h3 class="font-bold text-slate-900">2. The Correction</h3>
+              <p class="text-sm text-slate-600">One tap on Reconcile. Enter what you actually have. No questions asked.</p>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="space-y-4 reveal-hidden animate-on-scroll" style="transition-delay: 200ms;">
+            <div class="relative rounded-2xl border border-slate-200 bg-slate-900 p-2 shadow-xl">
+              <img src="assets/images/reconcile-after.webp" alt="The Fresh Start - Clean Slate" loading="lazy" class="rounded-lg w-full">
+            </div>
+            <div class="px-2 text-center md:text-left">
+              <h3 class="font-bold text-slate-900">3. The Fresh Start</h3>
+              <p class="text-sm text-slate-600">App and wallet are synced. The habit is alive again. Just like that.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bulk Add / Secondary Proof -->
+    <section id="how-it-works" class="border-y border-slate-200/70 bg-white/50 py-20">
+      <div class="@container mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-10 flex items-center gap-3 reveal-hidden animate-on-scroll">
+          <i data-lucide="sparkles" style="color: #4f39f6;" class="h-6 w-6"></i>
+          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">The 3-Second Catch Up</h2>
+        </div>
+
+        <div class="grid gap-6 @lg:grid-cols-2">
+          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-left-hidden animate-on-scroll">
+            <p class="mb-4 text-sm font-semibold text-slate-700">The Problem: Spreadsheet Drift</p>
+            <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50 font-mono text-xs text-slate-500">
+              <div class="grid grid-cols-4 gap-px bg-slate-200/80">
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Food??</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">? 900</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Travel-ish</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
+                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
               </div>
             </div>
           </div>
 
-          <div class="bg-white p-4 rounded-lg border border-gray-100">
-            <div class="text-lg font-extrabold text-gray-950 mb-4">Balance Sheet Structure</div>
-
-            <div class="mb-4">
-              <div class="flex items-center justify-between mb-1.5">
-                <div class="text-xs font-medium text-gray-700 flex items-baseline gap-1">
-                  <span>Total Assets</span>
-                  <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த சொத்துக்கள்</span>
-                </div>
-                <div class="text-base font-bold text-gray-900">₹26,350</div>
+          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-right-hidden animate-on-scroll">
+            <p class="mb-4 text-sm font-semibold text-slate-700">The Solution: One Simple List</p>
+            <div class="space-y-3">
+              <div class="rounded-xl border border-slate-200/70 bg-slate-50 p-3">
+                <label class="mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
+                  <i data-lucide="sparkles" class="h-4 w-4" style="color: #4f39f6;"></i>
+                  Bulk Add Transactions
+                </label>
+                <textarea readonly class="h-24 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 font-mono text-sm text-slate-600 outline-none">milk 120
+petrol 1100 yesterday
+salary 8000 income
+rent 5600 today</textarea>
               </div>
-              <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden">
-                <div class="h-full bg-blue-600" style="width: calc((10950 / 26350) * 100%)"></div>
-                <div class="h-full bg-cyan-500 ml-0.5" style="width: calc((4000 / 26350) * 100%)"></div>
-                <div class="h-full bg-purple-600 ml-0.5" style="width: calc((12300 / 26350) * 100%)"></div>
-              </div>
-              <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
-                <div class="flex items-center gap-1">
-                  <span class="size-1.5 rounded-full bg-blue-600 shrink-0"></span>
-                  <span class="whitespace-nowrap">Cash <span class="text-gray-400 font-mono">(₹10,950)</span></span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <span class="size-1.5 rounded-full bg-cyan-500 shrink-0"></span>
-                  <span class="whitespace-nowrap">Lent <span class="text-gray-400 font-mono">(₹4000)</span></span>
-                </div>
-                <div class="flex items-center gap-1">
-                  <span class="size-1.5 rounded-full bg-purple-600 shrink-0"></span>
-                  <span class="whitespace-nowrap">Inv. <span class="text-gray-400 font-mono">(₹12,300)</span></span>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <div class="text-xs font-medium text-gray-700 flex items-baseline gap-1">
-                  <span>Total Liabilities</span>
-                  <span class="text-[10px] font-normal text-gray-500 opacity-80">/ மொத்த பொறுப்புகள்</span>
-                </div>
-                <div class="text-base font-bold text-gray-900">₹12,400</div>
-              </div>
-              <div class="w-full h-3 bg-gray-100 rounded-full flex overflow-hidden relative">
-                <div class="absolute inset-y-0 left-0 h-full bg-amber-500" style="width: calc((12400 / 26350) * 100%)"></div>
-              </div>
-              <div class="flex flex-wrap items-center gap-y-1 gap-x-3 mt-2 text-[10px] text-gray-500">
-                <div class="flex items-center gap-1">
-                  <span class="size-1.5 rounded-full bg-amber-500 shrink-0"></span>
-                  <span class="whitespace-nowrap">Debt <span class="text-gray-400 font-mono">(₹12,400)</span></span>
+              <div class="rounded-xl border border-slate-200/70 p-3 text-sm">
+                <div class="mb-1 flex items-center justify-between">
+                  <span class="font-semibold text-indigo-600">Sync complete in 1 tap</span>
+                  <span class="inline-block px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200" style="background-color: #4f39f6;">
+                    Review
+                  </span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-       </div>
+      </div>
     </section>
 
     <!-- Philosophy — leads with the WHY -->
+
     <section id="why" class="bg-slate-950 py-20 text-slate-100">
       <div class="mx-auto w-full max-w-5xl px-4 text-center sm:px-6 lg:px-8">
         <p class="mb-5 text-sm font-semibold uppercase tracking-[0.14em]" style="color: #4f39f6;">
@@ -268,16 +294,17 @@
         </article>
 
         <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 80ms; transition-duration: 0.45s;">
-          <i data-lucide="users" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Family Money, Not Forgotten</h3>
-          <p class="text-sm leading-relaxed text-slate-600">"Ravi owes me ₹200" shouldn't live rent-free in your head. Track what you lent, what you owe, and your investments — without a separate app or a sticky note.</p>
+          <i data-lucide="scale" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Fix Mistakes Without Shame</h3>
+          <p class="text-sm leading-relaxed text-slate-600">Forgot to log for three days? Don't quit. Just reconcile. Adjust your balance to match reality and move forward—the app meets you where you are, not where you "should" have been.</p>
         </article>
 
         <article class="rounded-3xl border border-slate-200/50 bg-white p-6 reveal-hidden animate-on-scroll" style="transition-delay: 160ms; transition-duration: 0.45s;">
-          <i data-lucide="scale" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
-          <h3 class="mb-2 text-lg font-semibold text-slate-900">Fix Mistakes Without Shame</h3>
-          <p class="text-sm leading-relaxed text-slate-600">Forgot to log something for three days? Just reconcile. Adjust your balance to match reality and move forward — the app meets you where you are, not where you should have been.</p>
+          <i data-lucide="users" class="mb-4 h-6 w-6" style="color: #4f39f6;"></i>
+          <h3 class="mb-2 text-lg font-semibold text-slate-900">Family Money, Not Forgotten</h3>
+          <p class="text-sm leading-relaxed text-slate-600">"Ravi owes me ₹200" shouldn't live rent-free in your head. Track what you lent, what you owe, and your investments—all without a separate app or a sticky note.</p>
         </article>
+
       </div>
 
       <!-- Secondary Infrastructure Card -->
@@ -299,65 +326,7 @@
       </article>
     </section>
 
-    <!-- Bulk Add -->
-    <section id="how-it-works" class="border-y border-slate-200/70 bg-white/50 py-20">
-      <div class="@container mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div class="mb-10 flex items-center gap-3 reveal-hidden animate-on-scroll">
-          <i data-lucide="sparkles" style="color: #4f39f6;" class="h-6 w-6"></i>
-          <h2 class="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Bulk Add, Not Busywork</h2>
-        </div>
 
-        <div class="grid gap-6 @lg:grid-cols-2">
-          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-left-hidden animate-on-scroll">
-            <p class="mb-4 text-sm font-semibold text-slate-700">Before: Spreadsheet Drift</p>
-            <div class="overflow-hidden rounded-2xl border border-slate-200/70 bg-slate-50 font-mono text-xs text-slate-500">
-              <div class="grid grid-cols-4 gap-px bg-slate-200/80">
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Food??</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">? 900</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">Travel-ish</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-                <div class="bg-white px-1 sm:px-2 py-2 truncate text-center sm:text-left">...</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="rounded-3xl border border-slate-200/60 bg-white p-5 slide-right-hidden animate-on-scroll">
-            <p class="mb-4 text-sm font-semibold text-slate-700">After: Parsed Ledger</p>
-            <div class="space-y-3">
-              <div class="rounded-xl border border-slate-200/70 bg-slate-50 p-3">
-                <label class="mb-2 inline-flex items-center gap-2 text-xs uppercase tracking-wide text-slate-500">
-                  <i data-lucide="sparkles" class="h-4 w-4" style="color: #4f39f6;"></i>
-                  Bulk Add Transactions
-                </label>
-                <textarea readonly class="h-24 w-full resize-none rounded-lg border border-slate-200 bg-white p-2 font-mono text-sm text-slate-600 outline-none">milk 120
-petrol 1100 yesterday
-salary 8000 income
-rent 5600 today</textarea>
-              </div>
-              <div class="rounded-xl border border-slate-200/70 p-3 text-sm">
-                <div class="mb-1 flex items-center justify-between">
-                  <span class="font-semibold">5/5 Valid</span>
-                  <span class="inline-block px-6 py-2 bg-blue-600 text-white font-semibold rounded-md shadow-md hover:bg-blue-700 transition-colors duration-200" style="background-color: #4f39f6;">
-                    Review
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
   
   <footer class="border-t border-dark/5 pt-16 pb-8">
@@ -365,13 +334,13 @@ rent 5600 today</textarea>
       <div class="grid md:grid-cols-4 gap-12 mb-12">
         <div class="col-span-1 md:col-span-1">
           <div class="flex items-center gap-2 mb-6">
-            <img src="assets/images/logo.png" alt="i8.e10 Logo"
+            <img src="assets/images/logo.webp" alt="i8.e10 Logo"
               class="w-8 h-8 rounded-lg shadow-lg shadow-brand-500/20">
             <span class="text-lg font-bold">i8·e10</span>
           </div>
           <p class="text-gray-500 text-sm leading-relaxed">
             The offline <strong>daily expense tracker</strong>.
-            Built to capture every spend the second it happens. As a bonus, it’s completely private by design—giving you total sovereignty over your financial data.
+            Built to help you recover from tracking gaps without shame. As a bonus, it’s completely private by design—giving you total sovereignty over your financial data.
           </p>
         </div>
 
